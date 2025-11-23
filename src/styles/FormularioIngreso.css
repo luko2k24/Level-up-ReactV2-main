@@ -1,0 +1,55 @@
+/* src/components/FormularioIngreso.css */
+
+
+.formulario-ingreso {
+  width: 100%;
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  color: #fff;
+}
+
+.formulario-ingreso h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #09ff57;
+}
+
+.formulario-ingreso div {
+  margin-bottom: 20px;
+}
+
+.formulario-ingreso label {
+  font-size: 14px;
+  color: #ddd;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.formulario-ingreso input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #2e2e2e;
+  color: #fff;
+}
+
+.formulario-ingreso button {
+  width: 100%;
+  padding: 10px;
+  background-color: #39FF14;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.formulario-ingreso button:hover {
+  background-color: #30ff72;
+}

@@ -1,0 +1,159 @@
+/* Contenedor principal */
+.admin-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  padding: 20px;
+  background-color: #2a2a2a; /* Fondo oscuro */
+  color: #fff; /* Texto blanco */
+}
+
+/* Dashboard (Tarjetas KPI) */
+.dashboard {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.kpi-card {
+  padding: 20px;
+  border-radius: 16px;
+  color: white;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+}
+
+.kpi-card.blue {
+  background-color: #1e90ff;
+}
+
+.kpi-card.green {
+  background-color: #32cd32;
+}
+
+.kpi-card.yellow {
+  background-color: #ffeb3b;
+}
+
+.kpi-card h3 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.kpi-card p {
+  margin: 5px 0;
+}
+
+/* Formulario de gestión de productos */
+.form-container {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 30px;
+}
+
+.form-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group input, .form-group select {
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #3a3a3a;
+  color: white;
+}
+
+.form-group input[type="number"], .form-group select {
+  background-color: #3a3a3a;
+  border-color: #555;
+}
+
+.form-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.form-actions button {
+  padding: 12px;
+  background-color: #32cd32; 
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.form-actions button:hover {
+  background-color: #28a745;
+}
+
+/* Lista de productos */
+.products-list {
+  width: 100%;
+  margin-top: 30px;
+}
+
+.products-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #1a1a1a; 
+  border-radius: 8px; 
+}
+
+.products-list th, .products-list td {
+  padding: 15px 25px; 
+  border: 1px solid #333; 
+  text-align: center;
+  color: #fff; 
+}
+
+.products-list th {
+  background-color: #333; 
+  font-weight: bold; 
+}
+
+.products-list tr:nth-child(even) {
+  background-color: #252525; 
+}
+
+.products-list tr:nth-child(odd) {
+  background-color: #2a2a2a; 
+}
+
+.products-list tr:hover {
+  background-color: #3a3a3a; 
+}
+
+.products-list button {
+  padding: 6px 12px;
+  background-color: #32cd32; 
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px; 
+  margin-bottom: 10px; 
+  font-weight: bold; 
+}
+
+.products-list button:hover {
+  background-color: #28a745; 
+}
+
+.products-list button:focus {
+  outline: none; 
+}
