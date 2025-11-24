@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 // Importación de tipos usando alias
-import type { Producto } from "@/types/api"; 
+import type { Producto } from "@/api/api"; 
 // Importación de componente usando alias
 import ProductCard from "@/components/ProductCard";
 import { useNavigate } from 'react-router-dom';
 
-// Importación de servicios y hook usando alias
-import { ProductosService } from "@/api/service"; 
+// 🚀 CORRECCIÓN: Importamos el objeto principal 'api' (el único exportado en index.ts)
+import { api } from "@/api/service/index"; 
 // ✅ ÚNICA IMPORTACIÓN DEL HOOK
 import { useCart } from "@/hooks/useCart"; 
 
@@ -26,12 +26,14 @@ export default function Ofertas() {
     useEffect(() => {
         async function cargarProductos() {
             try {
-                // await para obtener los datos reales (no la Promesa)
-                const todosProductos = await ProductosService.listar();
+                // 🚀 LLAMADA: Usamos la sintaxis correcta: api.Productos.listar()
+                const todosProductos = await api.Productos.listar();
 
                 // Filtramos los productos que tienen "oferta" en su descripción
-                const productosEnOferta = todosProductos.filter(p =>
-                    p.descripcion.toLowerCase().includes('oferta')
+                const productosEnOferta = todosProductos.filter((p: Producto) =>
+                    // 💡 CORRECCIÓN DE TIPADO: Usamos (p.descripcion ?? '') 
+                    // para manejar 'undefined' y evitar el error de TypeScript.
+                    (p.descripcion ?? '').toLowerCase().includes('oferta')
                 );
 
                 setProductos(productosEnOferta);

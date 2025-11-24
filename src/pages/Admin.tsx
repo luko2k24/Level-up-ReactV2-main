@@ -1,15 +1,17 @@
+// src/pages/Admin.tsx
+
 import React, { useEffect, useMemo, useState, FormEvent, ChangeEvent } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import '../styles/admin.css';
 
-// 🚀 IMPORTAMOS SERVICIOS Y TIPOS REALES
-import { api } from '../api/service'; 
-import { Producto } from '../types/api'; 
-// NOTA: Si ProductoPayload no está en src/types/api.ts, debe definirse aquí:
-type ProductoPayload = { nombre: string; descripcion: string; precio: number; categoria: { id: number }; };
+// 🚀 RUTA CORRECTA (Debe funcionar si la configuración está bien)
+import { api } from '@/api/service/index'; 
+import { Producto, Pedido } from '@/api/api'; 
 
 
 // --- Tipos de la API para la gestión ---
+
+// Interfaz que usa el formulario localmente.
 interface FormularioProducto {
     id: number | string;
     nombre: string;
@@ -19,13 +21,14 @@ interface FormularioProducto {
     oferta: boolean;
 }
 
-// Interfaz simple para los pedidos recibidos
-interface Pedido {
-    id: number;
-    estado: string;
-    fechaCreacion: string;
-    usuario: { nombreUsuario: string };
+// Interfaz de Payload que la API de Spring espera
+interface ProductoAPIPayload {
+    nombre: string;
+    descripcion: string; 
+    precio: number;
+    categoria: { id: number };
 }
+
 
 const CLP = new Intl.NumberFormat('es-CL', {
     style: 'currency',
@@ -69,12 +72,12 @@ export default function AdminPanel() {
         setLoading(true);
         setErr('');
         try {
-            // Carga Productos (GET /api/v1/productos)
+            // Carga Productos
             const productosData = await api.Productos.listar();
             setProductos(productosData);
 
-            // Carga Pedidos (GET /api/v1/pedidos - Requiere ADMIN/VENDEDOR)
-            const pedidosData = await api.Pedidos.listarTodos();
+            // Carga Pedidos
+            const pedidosData = await api.Pedidos.listar() as Pedido[]; 
             setPedidos(pedidosData);
 
         } catch (e) {
@@ -89,8 +92,7 @@ export default function AdminPanel() {
     
     // 2. CONTROL DE ACCESO y Carga Inicial
     useEffect(() => {
-        // Redirige si no está logueado o no tiene el rol ADMIN
-        if (!api.Auth.isAuthenticated() || !api.Auth.isAdmin()) {
+        if (!api.Auth.isAuthenticated() || !api.Auth.isAnAdmin()) {
             alert('Acceso denegado: Se requiere rol de Administrador.');
             navigate('/'); 
             return;
@@ -130,8 +132,8 @@ export default function AdminPanel() {
         }
         setErr('');
 
-        // 🚀 CONSTRUCCIÓN DEL PAYLOAD (Utiliza el tipo ProductoPayload)
-        const payloadBase: ProductoPayload = {
+        // 🚀 CONSTRUCCIÓN DEL PAYLOAD (Usamos la interfaz ProductoAPIPayload)
+        const payloadBase: ProductoAPIPayload = {
             nombre: String(form.nombre).trim(), 
             descripcion: form.descripcion || '',
             precio: Number(form.precio),
@@ -172,8 +174,8 @@ export default function AdminPanel() {
             precio: p.precio ?? '',
             // Usamos el ID del objeto categoría
             categoriaId: p.categoria?.id ?? 1,
-            // Asumimos 'oferta' no viene de la API, por simplicidad, lo dejamos como falso.
-            oferta: false 
+            // 💡 Asumimos 'oferta' ya está en el tipo Producto.
+            oferta: p.oferta ?? false
         });
         setEditing(true);
         setErr('');
@@ -342,7 +344,7 @@ export default function AdminPanel() {
                                         <td>{p.categoria?.nombre || p.categoria?.id}</td>
                                         <td>{CLP.format(Number(p.precio))}</td>
                                         <td>
-                                            <button onClick={() => onEdit(p as any)}>Editar</button>
+                                            <button onClick={() => onEdit(p)}>Editar</button>
                                             <button onClick={() => onDelete(p.id)}>Eliminar</button>
                                         </td>
                                     </tr>

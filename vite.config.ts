@@ -2,20 +2,22 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-// Necesitas path para el alias @/ si lo configuraste
 import path from 'path'; 
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
-  // Opciones de configuración de Vitest
-  test: { 
-    globals: true, // Habilita las funciones globales como describe, test, expect
-    environment: 'jsdom', // Usa jsdom para las pruebas en el navegador
-    include: ['tests/**/*.test.tsx', 'tests/**/*.spec.tsx'], // Archivos de prueba específicos
+
+  // 🚀 CONFIGURACIÓN DEL PROXY (CORS FIX)
+  server: {
+    proxy: {
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin: true, 
+        secure: false,      
+      },
+    },
   },
-  
   
   resolve: { 
    alias: {
@@ -23,4 +25,6 @@ export default defineConfig({
    },
   },
 
+  // ❌ IMPORTANTE: ASEGÚRATE QUE EL OBJETO 'test' NO ESTÉ AQUÍ. ❌
+  // Debe ser manejado por Vitest por convención o en otro archivo.
 });

@@ -1,7 +1,7 @@
 // src/hooks/useCart.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Producto, ItemCarrito } from '@/types/api'; 
+import { Producto, ItemCarrito } from '@/api/api'; 
 // 🚨 CORRECCIÓN CLAVE: La ruta debe ser '@/api/service/carrito'
 import {
   obtenerCarrito,

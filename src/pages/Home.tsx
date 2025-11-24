@@ -1,7 +1,20 @@
 import React, { JSX, useEffect, useState } from 'react'
-import { api } from '../api/service'; 
-import { Producto } from '../types/api'; 
-import ProductCard from '../components/ProductCard'; 
+
+// 🚨 CORRECCIÓN: Usamos el alias absoluto @/ para referirnos a carpetas dentro de src/
+import { api } from '../api/service/index'; // Asegúrate de
+import { Producto } from '@/api/api'; 
+import ProductCard from '@/components/ProductCard'; 
+
+// 🚨 Nueva Función para manejar la lógica del carrito
+const handleAddToCart = (producto: Producto) => {
+    // CLAVE: Esta función ahora se pasa al ProductCard, habilitando el botón.
+    // Aquí es donde harías la llamada a tu API de Carrito o actualizarías tu estado local/global.
+    console.log(`[CARRITO] Producto añadido: ${producto.nombre} (ID: ${producto.id})`);
+    
+    // Usamos alert temporalmente para confirmar que el botón funciona:
+    // **NOTA:** En una aplicación real, usarías un modal o notificación, no alert().
+    alert(`¡Producto "${producto.nombre}" añadido al carrito! (Implementa la lógica real aquí)`);
+};
 
 export default function Home(): JSX.Element {
     // 1. Estado para almacenar los productos reales de la API
@@ -23,7 +36,8 @@ export default function Home(): JSX.Element {
 
             } catch (err: any) {
                 console.error("Error al cargar productos del backend:", err);
-                setError("No se pudieron cargar los productos. Intenta más tarde.");
+                // 🚨 Mejora el mensaje de error para ayudar a diagnosticar
+                setError("No se pudieron cargar los productos. Asegúrate que el backend esté funcionando correctamente en puerto 8080.");
                 setProductos([]);
             } finally {
                 setLoading(false);
@@ -69,7 +83,7 @@ export default function Home(): JSX.Element {
                 <span className="badge bg-accent">En tiempo real</span>
             </div>
 
-            {/* ======= Trending / Atajos (RESTAURADO) ======= */}
+            {/* ======= Trending / Atajos (RESTAURADOS) ======= */}
             <div className="d-flex flex-wrap gap-2 mb-3">
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#Worlds2025</span>
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#Switch2</span>
@@ -77,7 +91,7 @@ export default function Home(): JSX.Element {
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#NextGen</span>
             </div>
 
-            {/* ======= Widgets ligeros (RESTAURADO) ======= */}
+            {/* ======= Widgets ligeros (RESTAURADOS) ======= */}
             <div className="row g-3 mb-4">
                 <div className="col-12 col-md-4">
                     <div className="card card-glow h-100">
@@ -148,7 +162,7 @@ export default function Home(): JSX.Element {
             
             {/* ======= Renderizado de Productos Reales (API) ======= */}
             <div className="d-flex align-items-center justify-content-between mb-2 mt-5">
-                <h2 className="h4 m-0 text-brand">Productos Destacados</h2>
+                <h2 className="h4 m-0 text-brand">Catálogo de Productos</h2>
                 <span className="badge bg-accent">API Backend</span>
             </div>
             
@@ -160,7 +174,11 @@ export default function Home(): JSX.Element {
                     <div className="row g-4">
                         {productos.map((p: Producto) => (
                             <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={p.id}>
-                                <ProductCard producto={p} />
+                                <ProductCard 
+                                    producto={p} 
+                                    // 🚨 CLAVE: Pasamos la función para habilitar el botón "Agregar al Carrito"
+                                    onAdd={handleAddToCart}
+                                />
                             </div>
                         ))}
                     </div>
@@ -171,7 +189,7 @@ export default function Home(): JSX.Element {
                 )}
             </section>
 
-            {/* ======= Próximos eventos y lanzamientos (RESTAURADO) ======= */}
+            {/* ======= Próximos eventos y lanzamientos (RESTAURADOS) ======= */}
             <div className="mt-5">
                 <h3 className="h5 text-brand mb-3">🎮 Próximos eventos y lanzamientos</h3>
                 <div className="row g-3">

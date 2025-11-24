@@ -4,8 +4,8 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import '../styles/FormularioIngreso.css';
 
 // ⚠️ Importamos el servicio de la API y el tipo de petición
-import { api } from '../api/service'; 
-import { LoginRequest } from '../types/api'; 
+import { api } from '../api/service/index'; // Asegúrate de
+import { LoginRequest } from '../api/api'; 
 
 const FormularioIngreso: FC = () => {
     // Los nombres de estado coinciden con el DTO (nombreUsuario y password)

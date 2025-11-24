@@ -1,178 +1,154 @@
-// src/api/service/index.ts
+// src/api/index.ts - Funciones de servicio COMPLETAS para el backend
 
-// 1. Importaciones corregidas para la nueva estructura (../config) y (../../types/api)
-// Nota: La ruta de importación de API_BASE_URL (../config) parece lógica según tu estructura de carpetas.
-import { API_BASE_URL } from '../config'; 
 import { 
-    LoginRequest, 
-    LoginResponse, 
-    RegisterRequest, 
-    Producto, 
-    PedidoRequest 
-} from '../../types/api'; 
+    Producto, 
+    LoginRequest,
+    LoginResponse,
+    RegisterRequest,
+    PedidoRequest,
+    Pedido 
+} from '@/api/api'; 
 
+// URL Base del Backend (Spring Boot 8080)
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
-// 🚀 NUEVO TIPO: Define exactamente el DTO que Spring Boot espera para CREAR/ACTUALIZAR.
-// Esto resuelve el error de tipado en Admin.tsx
-export type ProductoPayload = {
-    nombre: string;
-    descripcion: string;
-    precio: number;
-    categoria: { id: number }; // Solo se envía el ID a la API para asociar la categoría
+// -------------------------------------------------------------------
+// UTILIDADES CLAVE (Autenticación y Token)
+// -------------------------------------------------------------------
+
+const getAuthHeader = (): Record<string, string> | {} => {
+    const token = localStorage.getItem("jwt_token");
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
-
-// 🚀 FUNCIÓN AUXILIAR: Decodificar el JWT para leer roles y expiración
-const decodeJwt = (token: string): { sub: string, rol: string, exp: number } | null => {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        // Usamos atob para decodificar Base64
-        return JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join('')));
-    } catch (e) {
-        return null;
-    }
-};
-
-
-// --- 🔑 Función Core para Manejo de JWT (fetchWithAuth) ---
-async function fetchWithAuth<T>(
-    endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-    body?: object,
-    skipAuth: boolean = false
-): Promise<T> {
-    const token = localStorage.getItem('jwtToken');
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-    };
-
-    // Adjuntamos el token si existe y no se está omitiendo (ej. en Login y Registro)
-    if (token && !skipAuth) {
-        headers['Authorization'] = `Bearer ${token}`; 
-    }
-
-    const config: RequestInit = {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-    };
-
-    const url = `${API_BASE_URL}/${endpoint}`;
-    const response = await fetch(url, config);
-        
-    // Manejo de errores de autenticación/autorización (401/403)
-    if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('jwtToken');
-        throw new Error('Sesión no válida o expirada. Por favor, inicia sesión de nuevo.');
-    }
-
-    if (!response.ok) {
-        // Intentamos obtener el texto del error que Spring Boot envía (ej. "Nombre de usuario ya existe.")
-        const errorBody = await response.text();
-        throw new Error(`Error ${response.status}: ${errorBody || 'Petición fallida'}`);
-    }
-        
-    // Manejo de respuestas sin contenido (204 No Content)
-    if (response.status === 204 || response.headers.get('Content-Length') === '0') {
-        return null as T;
-    }
-
-    return response.json() as Promise<T>;
+const decodeToken = (token: string): string | null => {
+    // Implementación de decodificación de JWT
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const payload = JSON.parse(jsonPayload);
+        return payload.rol || null; // Retorna el campo 'rol' (ej. "ADMIN" o "ADMIN,VENDEDOR")
+    } catch (e) {
+        return null;
+    }
 }
 
-// --- Servicios Funcionales ---
+// ✅ FUNCIÓN CORREGIDA: Verifica si el rol es ADMIN o VENDEDOR
+const isAnAdmin = (): boolean => {
+    const token = localStorage.getItem("jwt_token");
+    if (!token) return false;
+    
+    const rolesString = decodeToken(token); // e.g. "ADMIN,VENDEDOR"
+    if (!rolesString) return false;
 
-export const AuthService = {
-    
-    login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-        // skipAuth: true porque esta es la ruta para obtener el token
-        const data = await fetchWithAuth<LoginResponse>('auth/login', 'POST', credentials, true); 
-        if (data.token) {
-            localStorage.setItem('jwtToken', data.token); 
-        }
-        return data;
-    },
-    
-    register: async (userData: RegisterRequest): Promise<void> => {
-        // skipAuth: true porque no podemos tener token antes de registrarnos
-        await fetchWithAuth<void>('auth/registro', 'POST', userData, true);
-    },
-
-    logout: (): void => {
-        localStorage.removeItem('jwtToken');
-    },
-
-    isAuthenticated: (): boolean => {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) return false;
-        
-        const payload = decodeJwt(token);
-        if (payload && payload.exp) {
-            const now = Date.now() / 1000;
-            // Verifica si el token ha expirado
-            return payload.exp > now;
-        }
-        return true;
-    },
-
-    isAdmin: (): boolean => {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) return false;
-        
-        const payload = decodeJwt(token);
-        
-        if (payload && payload.rol) { 
-            // El backend JwtUtil.java une los roles con comas (ej. "CLIENTE,ADMIN")
-            const roles = String(payload.rol).split(',');
-            return roles.includes('ADMIN'); 
-        }
-        
-        return false;
-    }
+    // 💡 Lógica robusta que divide la cadena de roles y verifica la pertenencia.
+    const rolesArray = rolesString.toUpperCase().split(',').map(role => role.trim());
+    
+    return rolesArray.includes('ADMIN') || rolesArray.includes('VENDEDOR');
 };
 
-export const ProductosService = {
-    // La lista de productos y la obtención por ID son rutas públicas (skipAuth: true)
-    listar: async (): Promise<Producto[]> => {
-        return fetchWithAuth<Producto[]>('productos', 'GET', undefined, true);
-    },
-    
-    obtenerPorId: async (id: number): Promise<Producto> => {
-        return fetchWithAuth<Producto>(`productos/${id}`, 'GET', undefined, true);
-    },
-
-    // Las funciones de administración usan la ruta /admin/productos y requieren JWT
-    crear: async (productoData: ProductoPayload): Promise<Producto> => {
-        return fetchWithAuth<Producto>('admin/productos', 'POST', productoData); 
-    },
-
-    actualizar: async (id: number, productoData: ProductoPayload): Promise<Producto> => {
-        return fetchWithAuth<Producto>(`admin/productos/${id}`, 'PUT', productoData); 
-    },
-    
-    eliminar: async (id: number): Promise<void> => {
-        return fetchWithAuth<void>(`admin/productos/${id}`, 'DELETE');
-    },
+// FUNCIÓN REQUERIDA POR HEADER/ADMIN.TSX
+const isAuthenticated = (): boolean => {
+    const token = localStorage.getItem("jwt_token");
+    return !!token; 
 };
 
-export const PedidosService = {
-    // La creación de pedidos requiere que el usuario esté autenticado (el token se inyecta)
-    crear: async (pedidoData: PedidoRequest): Promise<any> => {
-        return fetchWithAuth<any>('pedidos', 'POST', pedidoData); 
-    },
-    
-    // Listar pedidos requiere roles ADMIN o VENDEDOR (el token se inyecta y es validado en el backend)
-    listarTodos: async (): Promise<any[]> => {
-        return fetchWithAuth<any[]>('pedidos', 'GET');
-    },
-};
 
+// -------------------------------------------------------------------
+// FETCH HELPER
+// -------------------------------------------------------------------
+
+async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    
+    const response = await fetch(url, { ...options, headers });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status} - ${response.statusText}`);
+    }
+
+    if (response.status === 204 || response.headers.get('Content-Length') === '0') {
+         return null as T;
+    }
+
+    return response.json() as Promise<T>;
+}
+
+// -------------------------------------------------------------------
+// EXPORTACIÓN DE LA API 
+// -------------------------------------------------------------------
 
 export const api = {
-    Auth: AuthService,
-    Productos: ProductosService,
-    Pedidos: PedidosService,
+    // Controladores de Autenticación
+    Auth: {
+        login: (request: LoginRequest): Promise<LoginResponse> => {
+            return fetchApi<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify(request) });
+        },
+        register: (request: RegisterRequest): Promise<void> => {
+            return fetchApi<void>('/auth/registro', { method: 'POST', body: JSON.stringify(request) });
+        },
+        logout: () => {
+            localStorage.removeItem("jwt_token");
+        },
+        // ✅ MÉTODOS EXPORTADOS CORRECTAMENTE
+        isAnAdmin: isAnAdmin,
+        isAuthenticated: isAuthenticated,
+        getAuthHeader: getAuthHeader,
+        decodeToken: decodeToken
+    },
+    
+    // Controladores de Productos
+    Productos: {
+        listar: (): Promise<Producto[]> => {
+            return fetchApi<Producto[]>('/productos');
+        },
+        obtenerPorId: (id: number): Promise<Producto> => {
+            return fetchApi<Producto>(`/productos/${id}`);
+        },
+        crear: (payload: any): Promise<Producto> => {
+            return fetchApi<Producto>('/admin/productos', { 
+                method: 'POST', 
+                body: JSON.stringify(payload),
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+        actualizar: (id: number, payload: any): Promise<Producto> => {
+            return fetchApi<Producto>(`/admin/productos/${id}`, { 
+                method: 'PUT', 
+                body: JSON.stringify(payload),
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+        eliminar: (id: number): Promise<void> => {
+            return fetchApi<void>(`/admin/productos/${id}`, { 
+                method: 'DELETE',
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+    },
+
+    // Controladores de Pedidos
+    Pedidos: {
+        crearPedido: (request: PedidoRequest): Promise<void> => {
+            return fetchApi<void>('/pedidos', {
+                method: 'POST',
+                body: JSON.stringify(request),
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+        listar: (): Promise<Pedido[]> => { 
+            return fetchApi<Pedido[]>('/pedidos', {
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+    },
 };

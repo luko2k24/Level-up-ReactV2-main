@@ -16,7 +16,7 @@ if (container) {
   root.render(
     <React.StrictMode>
       <BrowserRouter>
-        <App />
+        <App /> {/* 🚨 ¡Asegúrate que solo diga <App /> aquí! */}
       </BrowserRouter>
     </React.StrictMode>
   );

@@ -1,39 +1,42 @@
-// src/components/ProductCard.tsx
-
-import React, { FC, MouseEvent } from 'react';
+import React, { FC } from 'react';
 import { Link } from 'react-router-dom';
-import { Producto } from '../types/api';
+import { Producto } from '@/api/api'; 
+// Asume que Producto es el tipo ProductoAPI que definiste en db.ts
 
-// --- 1. Definición de Tipos ---
+// --- Variables de Fallback (Asegurando rutas estables) ---
+const FALLBACK = '/img/productos/placeholder.png';
 
-// La interfaz espera 'producto' (en español) para coincidir con Home.tsx
+// --- Definición de Tipos (Lo definimos LOCALMENTE para evitar type bleeding a App) ---
 interface TarjetaProductoProps {
-    producto?: Producto | null; 
+    producto: Producto | null;
     onAdd?: (producto: Producto) => void;
     onView?: () => void;
 }
 
-const FALLBACK = 'https://placehold.co/400x300/1C2833/FFFFFF?text=Sin+Imagen';
-
-// Definimos el componente como Functional Component (FC) con sus props tipados
+// 🚨 CORRECCIÓN CLAVE: Usamos TarjetaProductoProps directamente
 const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
-    // Si no hay producto, retornamos null inmediatamente
     if (!producto) return null;
 
-    // Destructuramos las propiedades del producto
-    const { id, nombre, precio, categoria } = producto as any; 
-    const imagen = (producto as any).imagen; 
-    const oferta = (producto as any).oferta; 
+    // Destructuramos las propiedades clave
+    const { id, nombre, precio, categoria } = producto; 
+    
+    // Usamos el campo 'urlImagen' que tu API devuelve
+    const urlImagen = (producto as any).urlImagen; 
+    const oferta = producto.oferta; 
+
+    // CORRECCIÓN CLAVE: La URL de imagen
+    const finalImageUrl = urlImagen ? `/${urlImagen}` : FALLBACK; 
 
     // Tipado para el evento onError de la imagen
     const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
         (e.currentTarget as HTMLImageElement).src = FALLBACK;
     };
 
-    // Usamos un botón para 'Ver' si el ID no existe (solo si onView existe)
+    // Lógica para decidir el enlace
+    // Usamos el Link si onView no se proporciona (comportamiento por defecto)
     const isViewLink = id && onView === undefined;
     
-    // Convertimos el precio a number antes de formatear
+    // Formateo del precio a CLP
     const precioFormateado = Number(precio).toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP',
@@ -42,10 +45,10 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
 
     return (
         <div className="card h-100 shadow-sm border-0 bg-dark text-white">
-            {/* Marco UNIFORME: 4:3, centrado, sin recorte */}
+            {/* Marco UNIFORME: 4:3 */}
             <div className="ratio ratio-4x3 product-media overflow-hidden rounded-top" style={{ backgroundColor: '#1e1e1e' }}>
                 <img
-                    src={imagen || FALLBACK}
+                    src={finalImageUrl}
                     onError={handleError} 
                     loading="lazy"
                     alt={nombre}
@@ -55,22 +58,27 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
 
             <div className="card-body d-flex flex-column p-3">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                    {/* Accedemos a categoria.nombre (si existe) */}
-                    {categoria && categoria.nombre && <span className="badge bg-secondary text-uppercase fw-normal">{categoria.nombre}</span>}
-                    {oferta && <span className="badge bg-danger text-uppercase fw-bold">¡Oferta!</span>}
+                    {/* Insignia de categoría */}
+                    {categoria && categoria.nombre && <span className="badge badge-category text-uppercase fw-normal">{categoria.nombre}</span>}
+                    {oferta && <span className="badge badge-oferta text-uppercase fw-bold">¡Oferta!</span>}
                 </div>
             
                 <h5 className="card-title text-truncate mb-1">{nombre}</h5>
-                {/* Accedemos a categoria.nombre para el texto */}
+                
                 {categoria && categoria.nombre && <p className="card-text text-muted small">{categoria.nombre}</p>}
                 
-                {/* Usamos la variable formateada */}
                 <p className="fs-4 fw-bold text-success mb-3 mt-auto">{precioFormateado}</p>
 
                 <div className="d-flex gap-2">
-                    {/* Lógica para decidir si es Link o Button */}
+                    {/* Botón Ver Detalle */}
                     {isViewLink ? (
-                        <Link to={`/producto/${id}`} className="btn btn-outline-light btn-sm flex-grow-1">Ver Detalle</Link>
+                        // 🚨 RUTA CRÍTICA: /productos/ID (Asegura que tu App.tsx use el plural)
+                        <Link 
+                            to={`/productos/${id}`} 
+                            className="btn btn-outline-light btn-sm flex-grow-1"
+                        >
+                            Ver Detalle
+                        </Link>
                     ) : (
                         <button 
                             className="btn btn-outline-light btn-sm flex-grow-1" 
@@ -81,6 +89,7 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
                         </button>
                     )}
                 
+                    {/* Botón Agregar al Carrito */}
                     <button 
                         className="btn btn-warning btn-sm flex-grow-1" 
                         onClick={() => onAdd && onAdd(producto)}
