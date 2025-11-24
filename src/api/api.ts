@@ -1,6 +1,8 @@
 // src/types/api.ts (Versión COMPLETA y CORREGIDA)
 
-// Tipos requeridos por Login/Registro
+// ----------------------
+// TIPOS PARA LOGIN
+// ----------------------
 export interface LoginRequest {
     nombreUsuario: string;
     password: string;
@@ -11,13 +13,24 @@ export interface LoginResponse {
     tipo: 'Bearer';
 }
 
+// ----------------------
+// TIPOS PARA REGISTRO
+// ----------------------
 export interface RegisterRequest {
     nombreUsuario: string;
     email: string;
     password: string;
+
+    // 🔥 CAMPOS REQUERIDOS POR EL BACKEND
+    nombreCompleto: string;
+    edad: number;
+    region: string;
+    comuna: string;
 }
 
-// Tipo de las entidades del Backend
+// ----------------------
+// ENTIDADES DEL BACKEND
+// ----------------------
 export interface Categoria {
     id: number;
     nombre: string;
@@ -30,27 +43,34 @@ export interface Producto {
     precio: number;
     urlImagen?: string;
     categoria: Categoria;
-    // La propiedad 'oferta' es crucial para el tipado en el frontend
-    oferta?: boolean; 
+
+    // Importante para ofertas
+    oferta?: boolean;
 }
 
-// Tipos de Pedidos (usados para listar)
+// ----------------------
+// TIPOS PARA PEDIDOS
+// ----------------------
 export interface Pedido {
     id: number;
     estado: string;
     fechaCreacion: string;
-    usuario: { nombreUsuario: string };
-    // Este tipo se usa para mapear la respuesta de api.Pedidos.listar()
+    usuario: {
+        nombreUsuario: string;
+    };
 }
 
-// 🚨 CORRECCIÓN CLAVE: Interfaz para el estado del carrito (ItemCarrito)
+// ----------------------
+// CARRITO
+// ----------------------
 export interface ItemCarrito {
     producto: Producto;
     cantidad: number;
 }
 
-
-// Tipos de Peticiones de Pedidos (usado para crear)
+// ----------------------
+// REQUEST PARA CREAR PEDIDOS
+// ----------------------
 export interface ItemPedidoRequest {
     producto: {
         id: number;
