@@ -1,19 +1,20 @@
+// src/components/ProductCard.tsx
+
 import React, { FC } from 'react';
 import { Link } from 'react-router-dom';
-import { Producto } from '@/api/api'; 
+import { Producto } from '../api/api'; 
 // Asume que Producto es el tipo ProductoAPI que definiste en db.ts
 
 // --- Variables de Fallback (Asegurando rutas estables) ---
 const FALLBACK = '/img/productos/placeholder.png';
 
-// --- Definición de Tipos (Lo definimos LOCALMENTE para evitar type bleeding a App) ---
+// --- Definición de Tipos ---
 interface TarjetaProductoProps {
     producto: Producto | null;
     onAdd?: (producto: Producto) => void;
     onView?: () => void;
 }
 
-// 🚨 CORRECCIÓN CLAVE: Usamos TarjetaProductoProps directamente
 const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
     if (!producto) return null;
 
@@ -33,10 +34,9 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
     };
 
     // Lógica para decidir el enlace
-    // Usamos el Link si onView no se proporciona (comportamiento por defecto)
     const isViewLink = id && onView === undefined;
     
-    // Formateo del precio a CLP
+    // Formateo del precio
     const precioFormateado = Number(precio).toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP',
@@ -72,7 +72,7 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
                 <div className="d-flex gap-2">
                     {/* Botón Ver Detalle */}
                     {isViewLink ? (
-                        // 🚨 RUTA CRÍTICA: /productos/ID (Asegura que tu App.tsx use el plural)
+                        // 🚨 RUTA CRÍTICA: Aseguramos que 'id' se pase como string
                         <Link 
                             to={`/productos/${id}`} 
                             className="btn btn-outline-light btn-sm flex-grow-1"

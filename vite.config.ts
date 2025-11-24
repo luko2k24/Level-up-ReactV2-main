@@ -1,30 +1,34 @@
 // vite.config.ts
 
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config'; 
 import react from '@vitejs/plugin-react';
-import path from 'path'; 
+import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-
-  // 🚀 CONFIGURACIÓN DEL PROXY (CORS FIX)
+  
   server: {
+    port: 5173, // Puerto de tu frontend
+    // 🛑 CORRECCIÓN FINAL: Configuración del PROXY
     proxy: {
+      // Todas las peticiones que empiecen con /api/v1 serán redirigidas a http://localhost:8080
       '/api/v1': {
         target: 'http://localhost:8080',
-        changeOrigin: true, 
-        secure: false,      
+        changeOrigin: true, // Necesario para que el origen sea localhost:8080
+        secure: false, // Desactiva la verificación de SSL (si tu API no usa HTTPS)
       },
-    },
+    }
   },
   
-  resolve: { 
-   alias: {
-   '@': path.resolve(__dirname, './src'),
-   },
+  test: { 
+    globals: true,
+    environment: 'jsdom',
+    include: ['**/*.test.ts', '**/*.test.tsx'],
   },
-
-  // ❌ IMPORTANTE: ASEGÚRATE QUE EL OBJETO 'test' NO ESTÉ AQUÍ. ❌
-  // Debe ser manejado por Vitest por convención o en otro archivo.
+  
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'), 
+    },
+  },
 });

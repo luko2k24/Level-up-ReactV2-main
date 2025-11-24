@@ -1,3 +1,4 @@
+// tsconfig.json
 {
   "compilerOptions": {
     "target": "es5",
@@ -12,7 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./src", 
     "paths": {
-      // 💡 CORRECCIÓN CLAVE: Cambiado de "~/*" a "@/*"
+      // 🚨 CORRECCIÓN: Usamos @/ en lugar de ~/*
+      // Ya que 'baseUrl' es "./src", "@/*" se resuelve a "src/*"
       "@/*": ["*"] 
     }
   },
