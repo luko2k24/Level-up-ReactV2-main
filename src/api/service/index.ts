@@ -1,4 +1,4 @@
-// src/api/index.ts - Funciones de servicio COMPLETAS para el backend
+// src/api/service/index.ts - Funciones de servicio COMPLETAS para el backend
 
 import { 
     Producto, 
@@ -12,6 +12,15 @@ import {
 // URL Base del Backend (Spring Boot 8080)
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
+// Interfaz para Usuarios (Necesaria para el CRUD de Admin)
+export interface UsuarioAPI {
+    id: number;
+    nombreUsuario: string;
+    nombreCompleto: string;
+    email: string;
+    rol: string;
+}
+
 // -------------------------------------------------------------------
 // UTILIDADES CLAVE (Autenticación y Token)
 // -------------------------------------------------------------------
@@ -22,7 +31,6 @@ const getAuthHeader = (): Record<string, string> | {} => {
 };
 
 const decodeToken = (token: string): string | null => {
-    // Implementación de decodificación de JWT
     try {
         const parts = token.split('.');
         if (parts.length !== 3) return null;
@@ -31,27 +39,23 @@ const decodeToken = (token: string): string | null => {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         const payload = JSON.parse(jsonPayload);
-        return payload.rol || null; // Retorna el campo 'rol' (ej. "ADMIN" o "ADMIN,VENDEDOR")
+        return payload.rol || null; 
     } catch (e) {
         return null;
     }
 }
 
-// ✅ FUNCIÓN CORREGIDA: Verifica si el rol es ADMIN o VENDEDOR
 const isAnAdmin = (): boolean => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return false;
     
-    const rolesString = decodeToken(token); // e.g. "ADMIN,VENDEDOR"
+    const rolesString = decodeToken(token); 
     if (!rolesString) return false;
 
-    // 💡 Lógica robusta que divide la cadena de roles y verifica la pertenencia.
     const rolesArray = rolesString.toUpperCase().split(',').map(role => role.trim());
-    
     return rolesArray.includes('ADMIN') || rolesArray.includes('VENDEDOR');
 };
 
-// FUNCIÓN REQUERIDA POR HEADER/ADMIN.TSX
 const isAuthenticated = (): boolean => {
     const token = localStorage.getItem("jwt_token");
     return !!token; 
@@ -99,7 +103,6 @@ export const api = {
         logout: () => {
             localStorage.removeItem("jwt_token");
         },
-        // ✅ MÉTODOS EXPORTADOS CORRECTAMENTE
         isAnAdmin: isAnAdmin,
         isAuthenticated: isAuthenticated,
         getAuthHeader: getAuthHeader,
@@ -151,4 +154,19 @@ export const api = {
             });
         },
     },
+
+    // 👇 NUEVO BLOQUE: Controladores de Usuarios
+    Usuarios: {
+        listar: (): Promise<UsuarioAPI[]> => {
+            return fetchApi<UsuarioAPI[]>('/admin/usuarios', {
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        },
+        eliminar: (id: number): Promise<void> => {
+            return fetchApi<void>(`/admin/usuarios/${id}`, {
+                method: 'DELETE',
+                headers: { ...getAuthHeader() } as HeadersInit
+            });
+        }
+    }
 };
