@@ -29,7 +29,7 @@ export default function Header() {
         const handleStorageChange = () => checkAuth();
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
+    },[location.pathname]);
 
     // --- ESTILOS CORREGIDOS ---
     // En lugar de usar botones con borde que se ponen blancos, usamos texto y efectos hover

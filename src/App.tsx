@@ -51,6 +51,8 @@ export default function App() {
           
           {/* Redirección para cualquier ruta no definida (404) */}
           <Route path="*" element={<Navigate to="/" replace />} />
+           {/* Ruta para perfil */}
+          <Route path="/perfil" element={<Perfil />} />
         </Routes>
       </main>
 
