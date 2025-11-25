@@ -45,8 +45,7 @@ export default function Header() {
         navigate('/');
     };
 
-    // --- Lógica de cálculo del Carrito (Simulada) ---
-    const totalCLP = useMemo(() => "99.990", []); 
+
 
     // --- Clases para los Links de Navegación (para que parezcan botones) ---
     const linkClasses = "nav-link btn btn-outline-light py-1 px-3 mx-1"; 

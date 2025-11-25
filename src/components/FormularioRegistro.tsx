@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { api } from '../api/service/index';
 import { RegisterRequest } from '../api/api';
+import '../styles/FormularioRegistro.css';
 
 const regiones = [
   'Selecciona una región',
@@ -11,6 +12,7 @@ const regiones = [
 ];
 
 const FormularioRegistro = () => {
+  // ... (Estado y funciones de manejo quedan igual)
 
   const [form, setForm] = useState({
     nombreUsuario: '',
@@ -48,6 +50,7 @@ const FormularioRegistro = () => {
       return;
     }
 
+    // El objeto de datos (data) que se envía al backend es correcto
     const data: RegisterRequest = {
       nombreUsuario: form.nombreUsuario,
       nombreCompleto: form.nombreCompleto,
@@ -62,25 +65,29 @@ const FormularioRegistro = () => {
       await api.Auth.register(data);
       setSuccess('Registro exitoso');
     } catch (err: any) {
-      setError('Error al registrar usuario');
+      // Intentamos obtener el mensaje de error del backend (ej. "El nombre de usuario ya existe.")
+      const errorMsg = err.response?.data?.mensaje || 'Error al registrar usuario';
+      setError(errorMsg);
     }
   };
 
   return (
-    <div className="container mt-4" style={{ maxWidth: '450px' }}>
-      <h3 className="text-center mb-3">Registro</h3>
+    // Se usa la clase principal del CSS
+    <div className="formulario-registro"> 
+      <h2>Registro</h2>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Uso de las clases .error y .success */}
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
 
       <form onSubmit={manejarEnvio}>
 
         {/* nombreUsuario */}
-        <div className="mb-3">
-          <label className="form-label">Nombre de usuario</label>
+        <div className="input-group">
+          <label htmlFor="nombreUsuario">Nombre de usuario</label>
           <input
             type="text"
-            className="form-control"
+            id="nombreUsuario"
             name="nombreUsuario"
             value={form.nombreUsuario}
             onChange={handleChange}
@@ -89,11 +96,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* nombreCompleto */}
-        <div className="mb-3">
-          <label className="form-label">Nombre completo</label>
+        <div className="input-group">
+          <label htmlFor="nombreCompleto">Nombre completo</label>
           <input
             type="text"
-            className="form-control"
+            id="nombreCompleto"
             name="nombreCompleto"
             value={form.nombreCompleto}
             onChange={handleChange}
@@ -102,11 +109,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* edad */}
-        <div className="mb-3">
-          <label className="form-label">Edad</label>
+        <div className="input-group">
+          <label htmlFor="edad">Edad</label>
           <input
             type="number"
-            className="form-control"
+            id="edad"
             name="edad"
             value={form.edad}
             onChange={handleChange}
@@ -115,11 +122,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* email */}
-        <div className="mb-3">
-          <label className="form-label">Correo electrónico</label>
+        <div className="input-group">
+          <label htmlFor="email">Correo electrónico</label>
           <input
             type="email"
-            className="form-control"
+            id="email"
             name="email"
             value={form.email}
             onChange={handleChange}
@@ -128,11 +135,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* password */}
-        <div className="mb-3">
-          <label className="form-label">Contraseña</label>
+        <div className="input-group">
+          <label htmlFor="password">Contraseña</label>
           <input
             type="password"
-            className="form-control"
+            id="password"
             name="password"
             value={form.password}
             onChange={handleChange}
@@ -141,11 +148,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* confirmar password */}
-        <div className="mb-3">
-          <label className="form-label">Confirmar contraseña</label>
+        <div className="input-group">
+          <label htmlFor="confirmarPassword">Confirmar contraseña</label>
           <input
             type="password"
-            className="form-control"
+            id="confirmarPassword"
             name="confirmarPassword"
             value={form.confirmarPassword}
             onChange={handleChange}
@@ -154,10 +161,10 @@ const FormularioRegistro = () => {
         </div>
 
         {/* region */}
-        <div className="mb-3">
-          <label className="form-label">Región</label>
+        <div className="input-group">
+          <label htmlFor="region">Región</label>
           <select
-            className="form-select"
+            id="region"
             name="region"
             value={form.region}
             onChange={handleChange}
@@ -170,11 +177,11 @@ const FormularioRegistro = () => {
         </div>
 
         {/* comuna */}
-        <div className="mb-3">
-          <label className="form-label">Comuna</label>
+        <div className="input-group">
+          <label htmlFor="comuna">Comuna</label>
           <input
             type="text"
-            className="form-control"
+            id="comuna"
             name="comuna"
             value={form.comuna}
             onChange={handleChange}
@@ -182,7 +189,8 @@ const FormularioRegistro = () => {
           />
         </div>
 
-        <button className="btn btn-success w-100" type="submit">
+        {/* Uso de la clase del botón */}
+        <button className="btn-registrar" type="submit">
           Registrarse
         </button>
       </form>

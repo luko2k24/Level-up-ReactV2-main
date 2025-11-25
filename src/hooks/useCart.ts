@@ -1,62 +1,60 @@
 // src/hooks/useCart.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Producto, ItemCarrito } from '@/api/api'; 
-// 🚨 CORRECCIÓN CLAVE: La ruta debe ser '@/api/service/carrito'
+import { useEffect, useState } from 'react';
+import type { Producto, ItemCarrito } from '@/api/api';
+
 import {
-  obtenerCarrito,
-  agregarAlCarrito,
-  eliminarDelCarrito,
-  vaciarCarrito,
-  totalCarrito,
-} from '@/api/service/carrito'; 
+    obtenerCarrito,
+    agregarAlCarrito,
+    eliminarDelCarrito as eliminarAPI,
+    vaciarCarrito as vaciarAPI,
+    totalCarrito
+} from '@/api/service/carrito';
 
-/**
- * Hook personalizado para gestionar la lógica del carrito de compras.
- */
+/*
+    Este hook administra todo el carrito en React.
+    - Sincroniza automáticamente con LocalStorage
+    - Expone funciones limpias y fáciles de usar
+*/
+
 export function useCart() {
-  const [items, setItems] = useState<ItemCarrito[]>([]);
-  const [total, setTotal] = useState<number>(0);
 
-  const actualizarEstado = useCallback(() => {
-    setItems(obtenerCarrito());
-    setTotal(totalCarrito());
-  }, []);
+    // Estado del carrito en React
+    const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
+    const [total, setTotal] = useState<number>(0);
 
-  // Efecto para inicializar el estado la primera vez que se monta
-  useEffect(() => {
-    actualizarEstado();
-  }, [actualizarEstado]);
+    // Cargar carrito al iniciar
+    useEffect(() => {
+        setCarrito(obtenerCarrito());
+        setTotal(totalCarrito());
+    }, []);
 
-  // Funciones de acción
-  const addItem = useCallback((producto: Producto, cantidad: number = 1) => {
-    try {
-      agregarAlCarrito(producto, cantidad); 
-      actualizarEstado(); 
-    } catch (error) {
-      console.error("Error al agregar producto al carrito:", error);
-    }
-  }, [actualizarEstado]);
+    // --- Métodos del carrito (con re-render inmediato) ---
 
-  const removeItem = useCallback((id: string) => {
-    eliminarDelCarrito(id);
-    actualizarEstado();
-  }, [actualizarEstado]);
+    const agregar = (producto: Producto, cantidad: number = 1) => {
+        const nuevoCarrito = agregarAlCarrito(producto, cantidad);
+        setCarrito([...nuevoCarrito]);
+        setTotal(totalCarrito());
+    };
 
-  const clearCart = useCallback(() => {
-    vaciarCarrito();
-    actualizarEstado();
-  }, [actualizarEstado]);
-  
-  const totalItemsCount = useMemo(() => items.length, [items]);
+    const eliminar = (productoId: number | string) => {
+        const nuevoCarrito = eliminarAPI(productoId);
+        setCarrito([...nuevoCarrito]);
+        setTotal(totalCarrito());
+    };
 
-  // Retornamos la interfaz del hook
-  return {
-    carrito: items, 
-    total,
-    totalItemsCount,
-    agregar: addItem,
-    eliminar: removeItem,
-    vaciar: clearCart,
-  };
+    const vaciar = () => {
+        vaciarAPI();
+        setCarrito([]);
+        setTotal(0);
+    };
+
+    // --- API del hook ---
+    return {
+        carrito,
+        total,
+        agregar,
+        eliminar,
+        vaciar
+    };
 }

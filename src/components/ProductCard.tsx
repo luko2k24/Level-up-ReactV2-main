@@ -1,106 +1,119 @@
 // src/components/ProductCard.tsx
 
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Producto } from '../api/api'; 
-// Asume que Producto es el tipo ProductoAPI que definiste en db.ts
+import { Producto } from '../api/api';
 
-// --- Variables de Fallback (Asegurando rutas estables) ---
 const FALLBACK = '/img/productos/placeholder.png';
 
-// --- Definición de Tipos ---
 interface TarjetaProductoProps {
     producto: Producto | null;
-    onAdd?: (producto: Producto) => void;
+    onAdd?: (producto: Producto) => void;   // ← YA NO ES async obligatorio
     onView?: () => void;
 }
 
 const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
+
+    const [cargando, setCargando] = useState(false);
+
     if (!producto) return null;
 
-    // Destructuramos las propiedades clave
-    const { id, nombre, precio, categoria } = producto; 
-    
-    // Usamos el campo 'urlImagen' que tu API devuelve
-    const urlImagen = (producto as any).urlImagen; 
-    const oferta = producto.oferta; 
+    const { id, nombre, precio, categoria } = producto;
+    const urlImagen = (producto as any).urlImagen;
+    const oferta = producto.oferta;
 
-    // CORRECCIÓN CLAVE: La URL de imagen
-    const finalImageUrl = urlImagen ? `/${urlImagen}` : FALLBACK; 
+    const finalImageUrl = urlImagen ? `/${urlImagen}` : FALLBACK;
 
-    // Tipado para el evento onError de la imagen
     const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
         (e.currentTarget as HTMLImageElement).src = FALLBACK;
     };
 
-    // Lógica para decidir el enlace
-    const isViewLink = id && onView === undefined;
-    
-    // Formateo del precio
     const precioFormateado = Number(precio).toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP',
         maximumFractionDigits: 0
     });
 
+    // Función segura para agregar al carrito
+    const handleAddToCartClick = async () => {
+        if (!onAdd || cargando) return;
+
+        setCargando(true);
+        try {
+            onAdd(producto); // ← YA NO necesita async
+        } catch (error) {
+            console.error("Error agregando al carrito:", error);
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    const isViewLink = id && onView === undefined;
+
     return (
         <div className="card h-100 shadow-sm border-0 bg-dark text-white">
-            {/* Marco UNIFORME: 4:3 */}
+
             <div className="ratio ratio-4x3 product-media overflow-hidden rounded-top" style={{ backgroundColor: '#1e1e1e' }}>
                 <img
                     src={finalImageUrl}
-                    onError={handleError} 
-                    loading="lazy"
                     alt={nombre}
+                    onError={handleError}
+                    loading="lazy"
                     className="object-fit-cover w-100 h-100"
                 />
             </div>
 
             <div className="card-body d-flex flex-column p-3">
+
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                    {/* Insignia de categoría */}
-                    {categoria && categoria.nombre && <span className="badge badge-category text-uppercase fw-normal">{categoria.nombre}</span>}
-                    {oferta && <span className="badge badge-oferta text-uppercase fw-bold">¡Oferta!</span>}
+                    {categoria && categoria.nombre && (
+                        <span className="badge badge-category text-uppercase fw-normal">
+                            {categoria.nombre}
+                        </span>
+                    )}
+                    {oferta && <span className="badge badge-oferta fw-bold">¡Oferta!</span>}
                 </div>
-            
+
                 <h5 className="card-title text-truncate mb-1">{nombre}</h5>
-                
-                {categoria && categoria.nombre && <p className="card-text text-muted small">{categoria.nombre}</p>}
-                
+                <p className="text-muted small">{categoria?.nombre ?? ''}</p>
+
                 <p className="fs-4 fw-bold text-success mb-3 mt-auto">{precioFormateado}</p>
 
                 <div className="d-flex gap-2">
-                    {/* Botón Ver Detalle */}
+
                     {isViewLink ? (
-                        // 🚨 RUTA CRÍTICA: Aseguramos que 'id' se pase como string
-                        <Link 
-                            to={`/productos/${id}`} 
+                        <Link
+                            to={`/productos/${id}`}
                             className="btn btn-outline-light btn-sm flex-grow-1"
                         >
                             Ver Detalle
                         </Link>
                     ) : (
-                        <button 
-                            className="btn btn-outline-light btn-sm flex-grow-1" 
+                        <button
+                            className="btn btn-outline-light btn-sm flex-grow-1"
                             onClick={onView}
-                            disabled={!onView && !id} 
                         >
                             Ver Detalle
                         </button>
                     )}
-                
-                    {/* Botón Agregar al Carrito */}
-                    <button 
-                        className="btn btn-warning btn-sm flex-grow-1" 
-                        onClick={() => onAdd && onAdd(producto)}
-                        disabled={!onAdd} 
+
+                    <button
+                        className="btn btn-warning btn-sm flex-grow-1"
+                        onClick={handleAddToCartClick}
+                        disabled={cargando}
                     >
-                        Agregar al Carrito
+                        {cargando ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                Agregando...
+                            </>
+                        ) : 'Agregar al Carrito'}
                     </button>
+
                 </div>
             </div>
         </div>
     );
-}
+};
 
 export default ProductCard;
