@@ -18,7 +18,10 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
 
     if (!producto) return null;
 
-    const { id, nombre, precio, categoria } = producto;
+    // 🔥🔥 USAR EL ID REAL QUE VIENE DEL BACKEND 🔥🔥
+    const id = (producto as any).idProducto || producto.id;
+
+    const { nombre, precio, categoria } = producto;
     const urlImagen = (producto as any).urlImagen;
     const oferta = producto.oferta;
 
@@ -34,11 +37,10 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
         maximumFractionDigits: 0
     });
 
-    // Función segura para agregar al carrito
     const handleAddToCartClick = async () => {
         if (!onAdd || cargando) return;
-
         setCargando(true);
+
         try {
             onAdd(producto); 
         } catch (error) {
@@ -53,7 +55,7 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
     return (
         <div className="card h-100 shadow-sm border-0 bg-dark text-white">
 
-            <div className="ratio ratio-4x3 product-media overflow-hidden rounded-top" style={{ backgroundColor: '#1e1e1e' }}>
+            <div className="ratio ratio-4x3 product-media overflow-hidden rounded-top">
                 <img
                     src={finalImageUrl}
                     alt={nombre}
@@ -66,7 +68,7 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
             <div className="card-body d-flex flex-column p-3">
 
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                    {categoria && categoria.nombre && (
+                    {categoria?.nombre && (
                         <span className="badge badge-category text-uppercase fw-normal">
                             {categoria.nombre}
                         </span>

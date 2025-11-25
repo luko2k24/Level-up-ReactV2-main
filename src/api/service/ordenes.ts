@@ -2,29 +2,40 @@
 
 import type { ItemCarrito } from "@/api/api";
 
-const API_URL = "https://tu-api.com/ordenes"; // cambia por tu backend real
+// 🛑 1. URL CORREGIDA: Apunta al endpoint de pedidos del backend (puerto 8080)
+const API_URL = "http://localhost:8080/api/v1/pedidos"; 
 
-export async function crearOrden(items: ItemCarrito[], total: number) {
-  const body = {
-    items: items.map(i => ({
-      id: i.producto.id,
-      nombre: i.producto.nombre,
-      precio: i.producto.precio,
-      cantidad: i.cantidad
-    })),
-    total,
-    fecha: new Date().toISOString(),
-  };
+// 🛑 2. Ahora espera el token JWT
+export async function crearOrden(items: ItemCarrito[], jwtToken: string) {
+    
+    // 🛑 3. ESTRUCTURA DEL PAYLOAD: El backend solo necesita cantidad y ID del producto
+    const payloadItems = items.map(i => ({
+        cantidad: i.cantidad,
+        producto: {
+            id: i.producto.id
+        }
+    }));
 
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+    const body = {
+        items: payloadItems
+    };
 
-  if (!res.ok) {
-    throw new Error("Error al enviar orden a la API");
-  }
+    const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            // 🛑 4. CLAVE: Encabezado de autenticación con el token
+            "Authorization": `Bearer ${jwtToken}`
+        },
+        body: JSON.stringify(body)
+    });
 
-  return await res.json();
+    if (res.status === 401) {
+        throw new Error("No autorizado. Por favor, inicie sesión de nuevo.");
+    }
+    if (!res.ok) {
+        throw new Error("Error al enviar el pedido al backend. Revise el estado del backend (productos/precios).");
+    }
+
+    return await res.json();
 }
