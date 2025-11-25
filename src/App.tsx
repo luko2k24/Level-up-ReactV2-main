@@ -1,4 +1,4 @@
-import React from 'react';
+  import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import ProductoDetalle from './pages/ProductoDetalle';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import Perfil from './pages/Perfil';
 
 /**
  * Componente principal de la aplicación.
