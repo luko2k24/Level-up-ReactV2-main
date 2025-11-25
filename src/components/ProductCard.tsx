@@ -8,7 +8,7 @@ const FALLBACK = '/img/productos/placeholder.png';
 
 interface TarjetaProductoProps {
     producto: Producto | null;
-    onAdd?: (producto: Producto) => void;   // ← YA NO ES async obligatorio
+    onAdd?: (producto: Producto) => void;   
     onView?: () => void;
 }
 
@@ -40,7 +40,7 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
 
         setCargando(true);
         try {
-            onAdd(producto); // ← YA NO necesita async
+            onAdd(producto); 
         } catch (error) {
             console.error("Error agregando al carrito:", error);
         } finally {

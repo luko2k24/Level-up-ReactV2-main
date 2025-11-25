@@ -3,7 +3,7 @@ import React, { useState, ChangeEvent, FormEvent, FC } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import '../styles/FormularioIngreso.css';
 
-// ⚠️ Importamos el servicio de la API y el tipo de petición
+
 import { api } from '../api/service/index'; // Asegúrate de
 import { LoginRequest } from '../api/api'; 
 
@@ -27,7 +27,7 @@ const FormularioIngreso: FC = () => {
         const credentials: LoginRequest = { nombreUsuario, password };
 
         try {
-            // 🚀 LLAMADA REAL AL BACKEND: POST /api/v1/auth/login
+          
             await api.Auth.login(credentials);
             
             alert('Ingreso exitoso');

@@ -1,12 +1,9 @@
 import React, { FC, useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-
-// 🚀 IMPORTACIONES DE LA NUEVA ARQUITECTURA API
 import { api } from '../api/service/index';
-// Asume que 'Producto' tiene campos: id, nombre, precio, descripcion, categoria { nombre: string }
 import { Producto } from '../api/api'; 
 
-// --- Componente de error para reutilizar el estilo de tu tema ---
+
 const NotFoundError = () => (
     <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
         {/* Utilizando el estilo .panel de tu tema */}
