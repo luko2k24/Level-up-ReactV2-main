@@ -22,30 +22,7 @@ export default function Home(): JSX.Element {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    // 2. Usar useEffect para llamar al backend
-    useEffect(() => {
-        const cargarProductos = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                // 🚀 LLAMADA A LA API: GET /api/v1/productos (ENDPOINT PÚBLICO)
-                const data = await api.Productos.listar(); 
-                
-                setProductos(data); 
-
-            } catch (err: any) {
-                console.error("Error al cargar productos del backend:", err);
-                // 🚨 Mejora el mensaje de error para ayudar a diagnosticar
-                setError("No se pudieron cargar los productos. Asegúrate que el backend esté funcionando correctamente en puerto 8080.");
-                setProductos([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        cargarProductos();
-    }, []); 
+    
 
     // --- Datos Simulados de Noticias y Eventos (RESTAURADOS) ---
     const noticiasFijas = [
@@ -159,35 +136,8 @@ export default function Home(): JSX.Element {
                     ))}
                 </div>
             </section>
-            
-            {/* ======= Renderizado de Productos Reales (API) ======= */}
-            <div className="d-flex align-items-center justify-content-between mb-2 mt-5">
-                <h2 className="h4 m-0 text-brand">Catálogo de Productos</h2>
-                <span className="badge bg-accent">API Backend</span>
-            </div>
-            
-            <section className="productos-destacados mb-5">
-                {loading && <p className="text-info">Cargando productos de la API...</p>}
-                {error && <p className="text-danger">{error}</p>}
-                
-                {(!loading && !error && productos.length > 0) && (
-                    <div className="row g-4">
-                        {productos.map((p: Producto) => (
-                            <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={p.id}>
-                                <ProductCard 
-                                    producto={p} 
-                                    // 🚨 CLAVE: Pasamos la función para habilitar el botón "Agregar al Carrito"
-                                    onAdd={handleAddToCart}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {/* Manejo de caso sin productos */}
-                {(!loading && !error && productos.length === 0) && (
-                    <p className="text-warning">No se encontraron productos en la base de datos.</p>
-                )}
-            </section>
+           
+       
 
             {/* ======= Próximos eventos y lanzamientos (RESTAURADOS) ======= */}
             <div className="mt-5">
