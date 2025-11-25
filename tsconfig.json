@@ -13,7 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./src", 
     "paths": {
-      // 🚨 CORRECCIÓN: Usamos @/ en lugar de ~/*
+      
       // Ya que 'baseUrl' es "./src", "@/*" se resuelve a "src/*"
       "@/*": ["*"] 
     }

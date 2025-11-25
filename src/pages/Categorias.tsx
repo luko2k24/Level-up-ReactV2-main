@@ -4,12 +4,12 @@ import ProductCard from '../components/ProductCard';
 
 import { Producto } from '../api/api';
 
-// 💚 HOOK DEL CARRITO
+
 import { useCart } from '../hooks/useCart';
 
 function Categorias() {
 
-    // 👌 Usamos la función correcta del hook
+   
     const { agregar: addToCart } = useCart();
 
     // Función para pasar al ProductCard

@@ -1,13 +1,11 @@
 import React, { JSX, useEffect, useState } from 'react'
-
-// 🚨 CORRECCIÓN: Usamos el alias absoluto @/ para referirnos a carpetas dentro de src/
-import { api } from '../api/service/index'; // Asegúrate de
+import { api } from '../api/service/index'; 
 import { Producto } from '@/api/api'; 
 import ProductCard from '@/components/ProductCard'; 
 
-// 🚨 Nueva Función para manejar la lógica del carrito
+
 const handleAddToCart = (producto: Producto) => {
-    // CLAVE: Esta función ahora se pasa al ProductCard, habilitando el botón.
+    // Esta función ahora se pasa al ProductCard, habilitando el botón.
     // Aquí es donde harías la llamada a tu API de Carrito o actualizarías tu estado local/global.
     console.log(`[CARRITO] Producto añadido: ${producto.nombre} (ID: ${producto.id})`);
     
@@ -24,7 +22,7 @@ export default function Home(): JSX.Element {
 
     
 
-    // --- Datos Simulados de Noticias y Eventos (RESTAURADOS) ---
+   
     const noticiasFijas = [
         {
             id: 'worlds-2025',
@@ -54,13 +52,13 @@ export default function Home(): JSX.Element {
                 <p className="text-muted">Encuentra lo mejor para tu experiencia gamer</p>
             </div>
 
-            {/* ======= Cabecera Noticias (RESTAURADO) ======= */}
+            {/* ======= Cabecera Noticias  ======= */}
             <div className="d-flex align-items-center justify-content-between mb-2">
                 <h2 className="h4 m-0 text-brand">Noticias</h2>
                 <span className="badge bg-accent">En tiempo real</span>
             </div>
 
-            {/* ======= Trending / Atajos (RESTAURADOS) ======= */}
+            {/* ======= Trending / Atajos ======= */}
             <div className="d-flex flex-wrap gap-2 mb-3">
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#Worlds2025</span>
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#Switch2</span>
@@ -68,7 +66,7 @@ export default function Home(): JSX.Element {
                 <span className="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">#NextGen</span>
             </div>
 
-            {/* ======= Widgets ligeros (RESTAURADOS) ======= */}
+            {/* ======= Widgets ligeros ======= */}
             <div className="row g-3 mb-4">
                 <div className="col-12 col-md-4">
                     <div className="card card-glow h-100">
@@ -108,7 +106,7 @@ export default function Home(): JSX.Element {
                 </div>
             </div>
 
-            {/* ======= Tarjetas de Noticias (Fijas) ======= */}
+            {/* ======= Tarjetas de Noticias======= */}
             <section>
                 <div className="row g-4">
                     {noticiasFijas.map((n: any) => (
@@ -139,7 +137,7 @@ export default function Home(): JSX.Element {
            
        
 
-            {/* ======= Próximos eventos y lanzamientos (RESTAURADOS) ======= */}
+            {/* ======= Próximos eventos y lanzamientos ======= */}
             <div className="mt-5">
                 <h3 className="h5 text-brand mb-3">🎮 Próximos eventos y lanzamientos</h3>
                 <div className="row g-3">

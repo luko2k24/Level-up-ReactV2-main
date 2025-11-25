@@ -1,15 +1,10 @@
 // src/pages/Ofertas.tsx
 
 import { useState, useEffect } from "react";
-// Importación de tipos usando alias
 import type { Producto } from "@/api/api"; 
-// Importación de componente usando alias
 import ProductCard from "@/components/ProductCard";
 import { useNavigate } from 'react-router-dom';
-
-// 🚀 CORRECCIÓN: Importamos el objeto principal 'api' (el único exportado en index.ts)
 import { api } from "@/api/service/index"; 
-// ✅ ÚNICA IMPORTACIÓN DEL HOOK
 import { useCart } from "@/hooks/useCart"; 
 
 
@@ -31,8 +26,8 @@ export default function Ofertas() {
 
                 // Filtramos los productos que tienen "oferta" en su descripción
                 const productosEnOferta = todosProductos.filter((p: Producto) =>
-                    // 💡 CORRECCIÓN DE TIPADO: Usamos (p.descripcion ?? '') 
-                    // para manejar 'undefined' y evitar el error de TypeScript.
+                    
+                    
                     (p.descripcion ?? '').toLowerCase().includes('oferta')
                 );
 

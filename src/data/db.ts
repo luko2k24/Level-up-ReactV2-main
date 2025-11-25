@@ -1,20 +1,9 @@
-// ====================================================================
-// INTERFACES (Alineadas con la estructura del Backend)
-// ====================================================================
-
-/**
- * Interfaz para la Categoria anidada en el objeto Producto del API.
- */
 export interface CategoriaAPI {
 	id: number;
 	nombre: string;
 }
 
-/**
- * Interfaz para la estructura del Producto que devuelve el API REST.
- * Nota: El backend usa id: number, descripcion: string y categoria: objeto.
- * Se añadieron 'oferta' e 'imagen' como opcionales por si tu frontend los espera.
- */
+
 export interface ProductoAPI {
 	id: number; // ID numérico (Long de Java)
 	nombre: string;
@@ -28,9 +17,7 @@ export interface ProductoAPI {
 }
 
 
-/**
- * Interfaz para definir la estructura de un Item dentro del Carrito (Sigue local).
- */
+
 export interface ItemCarrito {
 	id: string;
 	nombre: string;
@@ -38,9 +25,6 @@ export interface ItemCarrito {
 	cantidad: number; // Cantidad de unidades de este producto en el carrito
 }
 
-// ====================================================================
-// CONFIGURACIÓN API & LOCAL STORAGE (Solo para Carrito)
-// ====================================================================
 
 // URL del backend Spring Boot
 const API_URL = '/api/v1';
@@ -71,9 +55,6 @@ function escribir<T>(clave: string, valor: T): void {
 }
 
 
-// ====================================================================
-// GESTIÓN DE PRODUCTOS (CONECTADO AL API)
-// ====================================================================
 
 /**
  * Obtiene la lista completa de productos desde el backend.
@@ -148,10 +129,7 @@ export async function obtenerCategorias(): Promise<string[]> {
 	return categorias.sort();
 }
 
-// ⚠️ NOTA: Las funciones crearProducto, actualizarProducto, eliminarProducto, etc.
-// ⚠️ para el CRUD administrativo deben migrarse a llamadas POST/PUT/DELETE
-// ⚠️ al backend (ej. /api/v1/admin/productos) y usar un token JWT.
-// ⚠️ Por ahora, las dejo vacías para evitar conflictos.
+
 
 export function crearProducto(producto: any): any {
 	console.warn("CRUD en Producto: Debes implementar la llamada POST al API.");
@@ -167,9 +145,7 @@ export function eliminarProducto(id: string): void {
 	console.warn("CRUD en Producto: Debes implementar la llamada DELETE al API.");
 }
 
-// ====================================================================
-// GESTIÓN DEL CARRITO (Mantiene la lógica de LocalStorage)
-// ====================================================================
+
 
 /**
  * Obtiene el contenido actual del carrito.
@@ -178,9 +154,7 @@ export function obtenerCarrito(): ItemCarrito[] {
 	return leer<ItemCarrito[]>(CLAVES_ALMACENAMIENTO.carrito, [])
 }
 
-/**
- * Agrega un producto al carrito o incrementa su cantidad si ya existe.
- */
+
 export function agregarAlCarrito(producto: ProductoAPI, cantidad: number = 1): ItemCarrito[] {
 	if (producto.precio <= 0) {
 		throw new Error('El precio del producto debe ser mayor a cero para agregarlo al carrito.');
@@ -188,7 +162,7 @@ export function agregarAlCarrito(producto: ProductoAPI, cantidad: number = 1): I
 		
 	const carrito = obtenerCarrito()
 	
-	// Nota: Aquí se usa producto.id, que ahora es un number del API. 
+	// Aquí se usa producto.id, que ahora es un number del API. 
 	// Podría haber un problema si tu lógica de carrito espera un string.
 	// Por compatibilidad con ItemCarrito, se convierte a string si es necesario.
 	const productoId = String(producto.id); 

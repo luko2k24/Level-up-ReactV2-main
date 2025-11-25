@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-
-// 🚀 Importamos el objeto principal de la API
 import { api } from '@/api/service';
 
 
@@ -119,11 +117,11 @@ export default function Header() {
                             {/* Carrito (SIN EL BADGE '99') */}
                             <Link to="/carrito" className="btn btn-outline-light position-relative p-1">
                                 
-                                {/* Ícono de Carrito + Texto 'Carrito' */}
+                                
                                 <i className="bi bi-cart-fill me-1"></i>
                                 Carrito
                                 
-                                {/* ❌ ELIMINADO: <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"> 99 </span> */}
+                
                                 
                             </Link>
                             

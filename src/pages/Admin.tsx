@@ -4,12 +4,12 @@ import React, { useEffect, useMemo, useState, FormEvent, ChangeEvent } from 'rea
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import '../styles/admin.css';
 
-// 🚀 RUTA CORRECTA (Debe funcionar si la configuración está bien)
+
 import { api } from '@/api/service/index'; 
 import { Producto, Pedido } from '@/api/api'; 
 
 
-// --- Tipos de la API para la gestión ---
+
 
 // Interfaz que usa el formulario localmente.
 interface FormularioProducto {
@@ -132,7 +132,7 @@ export default function AdminPanel() {
         }
         setErr('');
 
-        // 🚀 CONSTRUCCIÓN DEL PAYLOAD (Usamos la interfaz ProductoAPIPayload)
+       
         const payloadBase: ProductoAPIPayload = {
             nombre: String(form.nombre).trim(), 
             descripcion: form.descripcion || '',
@@ -142,7 +142,7 @@ export default function AdminPanel() {
 
         try {
             if (editing) {
-                // 🚀 ACTUALIZACIÓN (PUT /api/v1/admin/productos/{id})
+               
                 const id = Number(form.id);
                 if (isNaN(id)) throw new Error('ID no válido para edición.');
                 
@@ -150,7 +150,7 @@ export default function AdminPanel() {
                 alert('Producto actualizado exitosamente!');
 
             } else {
-                // 🚀 CREACIÓN (POST /api/v1/admin/productos)
+                
                 await api.Productos.crear(payloadBase); 
                 alert('Producto creado exitosamente!');
             }
@@ -174,7 +174,7 @@ export default function AdminPanel() {
             precio: p.precio ?? '',
             // Usamos el ID del objeto categoría
             categoriaId: p.categoria?.id ?? 1,
-            // 💡 Asumimos 'oferta' ya está en el tipo Producto.
+           
             oferta: p.oferta ?? false
         });
         setEditing(true);
@@ -187,7 +187,7 @@ export default function AdminPanel() {
         
         if (customConfirm(`¿Estás seguro de eliminar el producto ${id}? Esta acción no se puede deshacer.`)) {
             try {
-                // 🚀 ELIMINACIÓN (DELETE /api/v1/admin/productos/{id})
+                
                 await api.Productos.eliminar(Number(id)); 
                 cargarDatos();
             } catch (e) {

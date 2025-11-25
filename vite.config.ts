@@ -9,7 +9,7 @@ export default defineConfig({
   
   server: {
     port: 5173, // Puerto de tu frontend
-    // 🛑 CORRECCIÓN FINAL: Configuración del PROXY
+   
     proxy: {
       // Todas las peticiones que empiecen con /api/v1 serán redirigidas a http://localhost:8080
       '/api/v1': {
