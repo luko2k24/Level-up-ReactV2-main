@@ -45,6 +45,7 @@ const decodeToken = (token: string): string | null => {
     }
 }
 
+// 👇👇👇 CORRECCIÓN APLICADA AQUÍ 👇👇👇
 const isAnAdmin = (): boolean => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return false;
@@ -53,8 +54,13 @@ const isAnAdmin = (): boolean => {
     if (!rolesString) return false;
 
     const rolesArray = rolesString.toUpperCase().split(',').map(role => role.trim());
-    return rolesArray.includes('ADMIN') || rolesArray.includes('VENDEDOR');
+    
+    // Verificamos ROLE_ADMIN (Spring) y mantenemos ADMIN por si acaso
+    return rolesArray.includes('ROLE_ADMIN') || 
+           rolesArray.includes('ROLE_VENDEDOR') || 
+           rolesArray.includes('ADMIN');
 };
+// 👆👆👆 FIN CORRECCIÓN 👆👆👆
 
 const isAuthenticated = (): boolean => {
     const token = localStorage.getItem("jwt_token");
