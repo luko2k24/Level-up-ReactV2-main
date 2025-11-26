@@ -1,21 +1,24 @@
 // src/hooks/useAuth.ts
+import { useAuthContext } from "@/context/AuthContext";
 
-import { useState, useEffect } from 'react';
-
-// Esta función se encarga de obtener el token JWT que guardaste al iniciar sesión.
-export function useAuthToken(): string | null {
-    // 🚨 AJUSTA ESTA CLAVE: Si usas una clave diferente para guardar el token en localStorage,
-    // cámbiala aquí (ej. 'accessToken', 'userToken', etc.).
-    const token = localStorage.getItem('jwtToken');
-    
-    return token;
-}
-
-// Opcionalmente, si manejas el estado de usuario:
-/*
+/**
+ * Devuelve el contexto completo de autenticación.
+ * Siempre debe usarse dentro del AuthProvider.
+ */
 export function useAuth() {
-    // ... lógica de contexto de usuario ...
-    const token = localStorage.getItem('jwtToken');
-    return { token, isAuthenticated: !!token };
+  return useAuthContext();
 }
-*/
+
+/**
+ * Devuelve siempre el token actual.
+ * Si no está en contexto (ej: refresco), lo obtiene desde localStorage.
+ */
+export function useAuthToken(): string | null {
+  const { token } = useAuthContext();
+
+  // Si está en memoria, usar ese primero
+  if (token) return token;
+
+  // Si no, recuperar desde localStorage
+  return localStorage.getItem("token");
+}

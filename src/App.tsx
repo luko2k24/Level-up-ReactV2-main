@@ -15,6 +15,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Perfil from './pages/Perfil';
 
+import PrivateRoute from '@/routes/PrivateRoute';
+import AdminRoute from '@/routes/AdminRoute';
+
 export default function App() {
   return (
     <div className="d-flex min-vh-100 flex-column">
@@ -23,29 +26,50 @@ export default function App() {
 
       <main className="container my-4 flex-fill">
         <Routes>
-          {/* Rutas públicas */}
+          {/* ✅ Rutas públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/categorias" element={<Categorias />} />
           <Route path="/ofertas" element={<Ofertas />} />
           <Route path="/carrito" element={<Carrito />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/productos/:id" element={<ProductoDetalle />} />
           <Route path="/compra-exitosa" element={<CompraExitosa />} />
           <Route path="/compra-fallida" element={<CompraFallida />} />
 
-          {/* 🔥 Ruta del detalle del producto - ARREGLADA */}
-          <Route path="/productos/:id" element={<ProductoDetalle />} />
-
-          {/* Rutas de autenticación */}
+          {/* ✅ Autenticación */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Admin */}
-          <Route path="/admin" element={<Admin />} />
+          {/* ✅ Rutas protegidas */}
+          <Route
+            path="/checkout"
+            element={
+              <PrivateRoute>
+                <Checkout />
+              </PrivateRoute>
+            }
+          />
 
-          {/* 404 */}
+          <Route
+            path="/perfil"
+            element={
+              <PrivateRoute>
+                <Perfil />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ✅ Admin protegido */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
+            }
+          />
+
+          {/* ✅ 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
-           {/* Ruta para perfil */}
-          <Route path="/perfil" element={<Perfil />} />
         </Routes>
       </main>
 

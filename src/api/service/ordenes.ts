@@ -2,40 +2,54 @@
 
 import type { ItemCarrito } from "@/api/api";
 
-// 🛑 1. URL CORREGIDA: Apunta al endpoint de pedidos del backend (puerto 8080)
-const API_URL = "http://localhost:8080/api/v1/pedidos"; 
+const API_URL = "http://localhost:8080/api/v1/pedidos";
 
-// 🛑 2. Ahora espera el token JWT
-export async function crearOrden(items: ItemCarrito[], jwtToken: string) {
-    
-    // 🛑 3. ESTRUCTURA DEL PAYLOAD: El backend solo necesita cantidad y ID del producto
-    const payloadItems = items.map(i => ({
-        cantidad: i.cantidad,
-        producto: {
-            id: i.producto.id
-        }
-    }));
+export async function crearOrden(items: ItemCarrito[], jwtToken?: string) {
+  // 🛑 Usa la clave "token" para coincidir con AuthContext
+  const token = jwtToken ?? localStorage.getItem("token"); 
+  if (!token) {
+    throw new Error("No autorizado: token de autenticación no disponible.");
+  }
 
-    const body = {
-        items: payloadItems
-    };
+  // Transformación de datos para el backend
+  const payloadItems = items.map((i: any) => ({
+    cantidad: i.cantidad ?? i.quantity ?? 1,
+    // Solo enviamos el ID del producto
+    producto: { id: i.producto?.id ?? i.productId ?? i.id },
+  }));
 
-    const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            // 🛑 4. CLAVE: Encabezado de autenticación con el token
-            "Authorization": `Bearer ${jwtToken}`
-        },
-        body: JSON.stringify(body)
-    });
+  const body = { items: payloadItems };
 
-    if (res.status === 401) {
-        throw new Error("No autorizado. Por favor, inicie sesión de nuevo.");
-    }
-    if (!res.ok) {
-        throw new Error("Error al enviar el pedido al backend. Revise el estado del backend (productos/precios).");
-    }
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Envía el token al backend
+      },
+      body: JSON.stringify(body),
+    });
 
-    return await res.json();
+    if (res.status === 401) {
+      throw new Error("No autorizado. Por favor, inicie sesión de nuevo.");
+    }
+
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      data = text;
+    }
+
+    if (!res.ok) {
+      const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+      throw new Error(`Error al enviar el pedido al backend: ${msg}`);
+    }
+
+    return data;
+  } catch (err) {
+    console.error("crearOrden - error:", err);
+    throw err;
+  }
 }
