@@ -1,312 +1,387 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api, UsuarioAPI } from '@/api/service'; // Asegúrate de importar la interfaz UsuarioAPI
-import { Producto, Pedido } from '@/api/api';
-import { FaBoxOpen, FaUsers, FaClipboardList, FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
-import '../styles/admin.css'; // Asegúrate de que este archivo exista o usa estilos inline si prefieres
+// src/pages/Admin.tsx
 
-// --- Interfaces Locales ---
+import React, { useEffect, useMemo, useState, FormEvent, ChangeEvent } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import '../styles/admin.css';
+
+
+import { api } from '@/api/service/index'; 
+import { Producto, Pedido } from '@/api/api'; 
+
+
+
+
+// Interfaz que usa el formulario localmente.
 interface FormularioProducto {
     id: number | string;
     nombre: string;
-    descripcion: string;
+    descripcion: string; 
     precio: number | string;
-    categoriaId: number | string;
+    categoriaId: number | string; 
     oferta: boolean;
 }
 
-const FORMULARIO_INICIAL: FormularioProducto = { id: '', nombre: '', descripcion: '', precio: '', categoriaId: 1, oferta: false };
+// Interfaz de Payload que la API de Spring espera
+interface ProductoAPIPayload {
+    nombre: string;
+    descripcion: string; 
+    precio: number;
+    categoria: { id: number };
+}
 
-const CLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
+
+const CLP = new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    maximumFractionDigits: 0
+});
+
+// Estado inicial del formulario
+const FORMULARIO_INICIAL: FormularioProducto = { 
+    id: '', 
+    nombre: '', 
+    descripcion: '',
+    precio: '', 
+    categoriaId: 1, 
+    oferta: false 
+};
+
+// --- Funciones Auxiliares ---
+const customConfirm = (message: string): boolean => {
+    const result = window.prompt(`${message}\n\nEscribe "ELIMINAR" para confirmar:`);
+    return result === 'ELIMINAR';
+}
+
+// --- Componente Principal ---
 
 export default function AdminPanel() {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // --- Estados ---
-    const [activeTab, setActiveTab] = useState<'productos' | 'usuarios' | 'pedidos'>('productos');
+    // Estado local para los datos
+    const [productos, setProductos] = useState<Producto[]>([]); 
+    const [pedidos, setPedidos] = useState<Pedido[]>([]); 
+    const [form, setForm] = useState<FormularioProducto>(FORMULARIO_INICIAL); 
+    const [editing, setEditing] = useState<boolean>(false);
+    const [err, setErr] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string>('');
 
-    // Datos
-    const [productos, setProductos] = useState<Producto[]>([]);
-    const [usuarios, setUsuarios] = useState<UsuarioAPI[]>([]); // Estado para usuarios
-    const [pedidos, setPedidos] = useState<Pedido[]>([]);
 
-    // Formulario Productos
-    const [prodForm, setProdForm] = useState<FormularioProducto>(FORMULARIO_INICIAL);
-    const [editingProd, setEditingProd] = useState<boolean>(false);
-
-    // --- Carga de Datos ---
-    const cargarTodo = async () => {
+    // 1. LÓGICA DE CARGA DE DATOS DESDE LA API (ASÍNCRONA)
+    const cargarDatos = async () => {
         setLoading(true);
-        setError('');
+        setErr('');
         try {
-            // 1. Productos (Público o Admin)
-            const dataProd = await api.Productos.listar();
-            setProductos(dataProd);
+            // Carga Productos
+            const productosData = await api.Productos.listar();
+            setProductos(productosData);
 
-            // 2. Usuarios (Solo Admin)
-            try {
-                const dataUsers = await api.Usuarios.listar();
-                setUsuarios(dataUsers);
-            } catch (e) { console.warn("No se pudieron cargar usuarios (quizás no eres SuperAdmin)"); }
-
-            // 3. Pedidos (Solo Admin)
-            try {
-                const dataPedidos = await api.Pedidos.listar();
-                setPedidos(dataPedidos);
-            } catch (e) { console.warn("No se pudieron cargar pedidos"); }
+            // Carga Pedidos
+            const pedidosData = await api.Pedidos.listar() as Pedido[]; 
+            setPedidos(pedidosData);
 
         } catch (e) {
-            console.error(e);
-            setError('Error de conexión. Verifica que el backend esté encendido (puerto 8080) y tengas sesión activa.');
+            console.error('Error cargando datos de la API:', e);
+            setErr('No se pudieron cargar los datos (Verifique su conexión o token).');
+            setProductos([]);
+            setPedidos([]);
         } finally {
             setLoading(false);
         }
     };
-
+    
+    // 2. CONTROL DE ACCESO y Carga Inicial
     useEffect(() => {
         if (!api.Auth.isAuthenticated() || !api.Auth.isAnAdmin()) {
-            alert('Acceso denegado. Debes ser Administrador.');
-            navigate('/');
+            alert('Acceso denegado: Se requiere rol de Administrador.');
+            navigate('/'); 
             return;
         }
-        cargarTodo();
+        
+        cargarDatos();
     }, [navigate]);
 
-    // --- Lógica Productos ---
-    const handleProdSubmit = async (e: React.FormEvent) => {
+    // Lista ordenada de productos
+    const listaOrdenada = useMemo(
+        () => [...productos].sort((a, b) => (a.id > b.id ? 1 : -1)),
+        [productos]
+    );
+
+    const onChange = (k: keyof FormularioProducto, v: string | number | boolean) => setForm(prev => ({ ...prev, [k]: v }));
+
+    /** Valida los campos del formulario. */
+    const validar = (): string => {
+        if (!String(form.nombre).trim()) return 'El nombre es obligatorio'; 
+        
+        const price = Number(form.precio);
+        if (!Number.isFinite(price) || price <= 0) return 'El precio debe ser un número mayor a 0';
+        
+        const categoriaId = Number(form.categoriaId);
+        if (!Number.isInteger(categoriaId) || categoriaId <= 0) return 'El ID de categoría es inválido';
+        
+        return '';
+    };
+
+    /** Maneja la creación o actualización del producto. */
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const msg = validar();
+        if (msg) {
+            setErr(msg);
+            return;
+        }
+        setErr('');
+
+       
+        const payloadBase: ProductoAPIPayload = {
+            nombre: String(form.nombre).trim(), 
+            descripcion: form.descripcion || '',
+            precio: Number(form.precio),
+            categoria: { id: Number(form.categoriaId) },
+        };
+
         try {
-            const payload = {
-                nombre: prodForm.nombre,
-                descripcion: prodForm.descripcion,
-                precio: Number(prodForm.precio),
-                categoria: { id: Number(prodForm.categoriaId) }
-            };
+            if (editing) {
+               
+                const id = Number(form.id);
+                if (isNaN(id)) throw new Error('ID no válido para edición.');
+                
+                await api.Productos.actualizar(id, payloadBase); 
+                alert('Producto actualizado exitosamente!');
 
-            if (editingProd) {
-                await api.Productos.actualizar(Number(prodForm.id), payload);
             } else {
-                await api.Productos.crear(payload);
+                
+                await api.Productos.crear(payloadBase); 
+                alert('Producto creado exitosamente!');
             }
-            setProdForm(FORMULARIO_INICIAL);
-            setEditingProd(false);
-            cargarTodo(); // Recargar tablas
-            alert(editingProd ? 'Producto actualizado' : 'Producto creado');
-        } catch (err) {
-            alert('Error al guardar producto');
+
+            // Limpiar formulario y estado
+            setForm(FORMULARIO_INICIAL);
+            setEditing(false);
+            cargarDatos(); // Recargar datos desde la API
+        } catch (e2) {
+            console.error('onSubmit error:', e2);
+            setErr(`No se pudo guardar. Mensaje: ${e2 instanceof Error ? e2.message : String(e2)}`);
         }
     };
 
-    const borrarProducto = async (id: number) => {
-        if (confirm('¿Eliminar producto?')) {
-            await api.Productos.eliminar(id);
-            cargarTodo();
-        }
+    /** Carga los datos de un producto en el formulario para su edición. */
+    const onEdit = (p: Producto) => {
+        setForm({
+            id: p.id,
+            nombre: p.nombre ?? '', 
+            descripcion: p.descripcion ?? '',
+            precio: p.precio ?? '',
+            // Usamos el ID del objeto categoría
+            categoriaId: p.categoria?.id ?? 1,
+           
+            oferta: p.oferta ?? false
+        });
+        setEditing(true);
+        setErr('');
     };
 
-    // --- Lógica Usuarios ---
-    const borrarUsuario = async (id: number) => {
-        if (confirm('¿Seguro que deseas eliminar a este usuario? Esta acción es irreversible.')) {
+    /** Elimina un producto. */
+    const onDelete = async (id: number | string) => {
+        if (!id) return;
+        
+        if (customConfirm(`¿Estás seguro de eliminar el producto ${id}? Esta acción no se puede deshacer.`)) {
             try {
-                await api.Usuarios.eliminar(id);
-                cargarTodo();
+                
+                await api.Productos.eliminar(Number(id)); 
+                cargarDatos();
             } catch (e) {
-                alert('Error al eliminar usuario (puede tener pedidos asociados).');
+                console.error('onDelete error:', e);
+                setErr('No se pudo eliminar el producto. Revisa los permisos.');
             }
         }
     };
 
-    if (loading) return <div className="text-center mt-5 text-white"><h2>Cargando Panel...</h2></div>;
+    /** Limpia el formulario y sale del modo edición. */
+    const onClear = () => {
+        setForm(FORMULARIO_INICIAL);
+        setEditing(false);
+        setErr('');
+    };
+
+    // Renderizado del panel
+    if (loading) {
+        return <div className="text-center p-5 text-info">Cargando dashboard...</div>;
+    }
+    
+    // Datos para las métricas
+    const stats = { compras: pedidos.length, productos: productos.length, usuarios: 892, pendientes: pedidos.filter(p => p.estado === 'PENDIENTE').length };
+
+    // Componente visual para las métricas (usando datos ficticios por ahora)
+    const kpiBox = (title: string, value: number, color: string) => (
+        <div className="col-12 col-md-4 mb-3">
+            <div
+                className="card shadow-sm h-100"
+                style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,.08)', background: '#0f0f0f' }}
+            >
+                <div
+                    className="p-3"
+                    style={{
+                        background: color,
+                        color: '#000',
+                        fontWeight: 700,
+                        letterSpacing: .2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}
+                >
+                    <span>{title}</span>
+                    <span style={{ opacity: .8, fontSize: 12 }}>Dashboard</span>
+                </div>
+                <div className="p-4 d-flex align-items-end justify-content-between">
+                    <div style={{ fontSize: 42, fontWeight: 800, lineHeight: 1, color: '#fff' }}>{value}</div>
+                    <div style={{ color: 'rgba(255,255,255,.75)' }} className="small">Última act.</div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="container-fluid py-4 bg-dark min-vh-100 text-white">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="fw-bold text-success">Panel de Administración</h2>
-                <button onClick={cargarTodo} className="btn btn-outline-light btn-sm">Refrescar Datos</button>
+        <div className="container-fluid py-4">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+                <h2 className="mb-0" style={{ color: '#fff' }}>Panel de administración</h2>
             </div>
 
-            {error && <div className="alert alert-danger">{error}</div>}
+            <div className="row">
+                {kpiBox('Pedidos', stats.compras, '#30A4FF')}
+                {kpiBox('Productos', stats.productos, '#47D16E')}
+                {kpiBox('Pendientes', stats.pendientes, '#FFC44D')}
+            </div>
 
-            {/* --- PESTAÑAS DE NAVEGACIÓN --- */}
-            <ul className="nav nav-pills mb-4 gap-2">
-                <li className="nav-item">
-                    <button 
-                        className={`nav-link d-flex align-items-center gap-2 ${activeTab === 'productos' ? 'active bg-success' : 'bg-secondary text-white'}`}
-                        onClick={() => setActiveTab('productos')}
-                    >
-                        <FaBoxOpen /> Productos ({productos.length})
-                    </button>
-                </li>
-                <li className="nav-item">
-                    <button 
-                        className={`nav-link d-flex align-items-center gap-2 ${activeTab === 'usuarios' ? 'active bg-primary' : 'bg-secondary text-white'}`}
-                        onClick={() => setActiveTab('usuarios')}
-                    >
-                        <FaUsers /> Usuarios ({usuarios.length})
-                    </button>
-                </li>
-                <li className="nav-item">
-                    <button 
-                        className={`nav-link d-flex align-items-center gap-2 ${activeTab === 'pedidos' ? 'active bg-warning text-dark' : 'bg-secondary text-white'}`}
-                        onClick={() => setActiveTab('pedidos')}
-                    >
-                        <FaClipboardList /> Pedidos ({pedidos.length})
-                    </button>
-                </li>
-            </ul>
-
-            {/* --- CONTENIDO PESTAÑA: PRODUCTOS --- */}
-            {activeTab === 'productos' && (
-                <div className="row">
-                    {/* Formulario */}
-                    <div className="col-md-4 mb-4">
-                        <div className="card bg-secondary text-white border-0 shadow">
-                            <div className="card-header bg-success fw-bold">
-                                {editingProd ? 'Editar Producto' : 'Crear Nuevo Producto'}
+            <div className="row">
+                <div className="col-12 col-md-6">
+                    <div className="form-container">
+                        <h2>{editing ? 'Editar Producto' : 'Crear Producto'}</h2>
+                        {err && <div className="alert">{err}</div>}
+                        <form onSubmit={onSubmit}>
+                            <div className="form-group">
+                                <label htmlFor="producto-id">ID</label>
+                                <input
+                                    id="producto-id"
+                                    value={form.id}
+                                    onChange={e => onChange('id', e.target.value)}
+                                    disabled={editing}
+                                    placeholder="(auto si lo dejas vacío)"
+                                />
                             </div>
-                            <div className="card-body">
-                                <form onSubmit={handleProdSubmit}>
-                                    <div className="mb-2">
-                                        <label className="form-label small">Nombre</label>
-                                        <input className="form-control form-control-sm" value={prodForm.nombre} onChange={e => setProdForm({...prodForm, nombre: e.target.value})} required />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="form-label small">Descripción</label>
-                                        <textarea className="form-control form-control-sm" value={prodForm.descripcion} onChange={e => setProdForm({...prodForm, descripcion: e.target.value})} />
-                                    </div>
-                                    <div className="row">
-                                        <div className="col-6 mb-2">
-                                            <label className="form-label small">Precio</label>
-                                            <input type="number" className="form-control form-control-sm" value={prodForm.precio} onChange={e => setProdForm({...prodForm, precio: e.target.value})} required />
-                                        </div>
-                                        <div className="col-6 mb-2">
-                                            <label className="form-label small">ID Categoría</label>
-                                            <input type="number" className="form-control form-control-sm" value={prodForm.categoriaId} onChange={e => setProdForm({...prodForm, categoriaId: e.target.value})} required />
-                                        </div>
-                                    </div>
-                                    <div className="d-grid gap-2 mt-3">
-                                        <button type="submit" className="btn btn-light btn-sm fw-bold">
-                                            {editingProd ? 'Guardar Cambios' : 'Crear Producto'}
-                                        </button>
-                                        {editingProd && (
-                                            <button type="button" className="btn btn-outline-light btn-sm" onClick={() => {setProdForm(FORMULARIO_INICIAL); setEditingProd(false)}}>
-                                                Cancelar Edición
-                                            </button>
-                                        )}
-                                    </div>
-                                </form>
+                            <div className="form-group">
+                                <label htmlFor="producto-nombre">Nombre</label>
+                                <input
+                                    id="producto-nombre"
+                                    value={form.nombre} 
+                                    onChange={e => onChange('nombre', e.target.value)} 
+                                    required
+                                />
                             </div>
-                        </div>
+                            <div className="form-group">
+                                <label htmlFor="producto-descripcion">Descripción</label>
+                                <textarea
+                                    id="producto-descripcion"
+                                    value={form.descripcion} 
+                                    onChange={e => onChange('descripcion', e.target.value)} 
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="producto-precio">Precio</label>
+                                <input
+                                    id="producto-precio"
+                                    type="number"
+                                    value={form.precio}
+                                    onChange={e => onChange('precio', e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="producto-categoriaid">ID Categoría (1, 2, 3...)</label>
+                                <input
+                                    id="producto-categoriaid"
+                                    type="number"
+                                    value={form.categoriaId}
+                                    onChange={e => onChange('categoriaId', e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group checkbox-group">
+                                <input
+                                    id="producto-oferta"
+                                    type="checkbox"
+                                    checked={form.oferta}
+                                    onChange={e => onChange('oferta', e.target.checked)}
+                                />
+                                <label htmlFor="producto-oferta">En oferta (No usado en API)</label>
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit">{editing ? 'Guardar cambios' : 'Crear'}</button>
+                                <button type="button" onClick={onClear}>Limpiar</button>
+                            </div>
+                        </form>
                     </div>
-
-                    {/* Tabla Productos */}
-                    <div className="col-md-8">
-                        <div className="table-responsive rounded shadow">
-                            <table className="table table-dark table-hover align-middle mb-0">
-                                <thead className="table-success text-dark">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Precio</th>
-                                        <th>Categoría</th>
-                                        <th className="text-end">Acciones</th>
+                </div>
+                <div className="col-12 col-md-6">
+                    <div className="products-list">
+                        <h2>Listado de productos</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Cat.</th>
+                                    <th>Precio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {listaOrdenada.map(p => (
+                                    <tr key={p.id}>
+                                        <td>{p.id}</td>
+                                        <td>{p.nombre}</td> 
+                                        <td>{p.categoria?.nombre || p.categoria?.id}</td>
+                                        <td>{CLP.format(Number(p.precio))}</td>
+                                        <td>
+                                            <button onClick={() => onEdit(p)}>Editar</button>
+                                            <button onClick={() => onDelete(p.id)}>Eliminar</button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {productos.map(p => (
-                                        <tr key={p.id}>
-                                            <td>{p.id}</td>
-                                            <td>{p.nombre}</td>
-                                            <td>{CLP.format(p.precio)}</td>
-                                            <td>{p.categoria?.nombre || p.categoria?.id}</td>
-                                            <td className="text-end">
-                                                <button className="btn btn-sm btn-info me-2" onClick={() => {
-                                                    setProdForm({ id: p.id, nombre: p.nombre, descripcion: p.descripcion || '', precio: p.precio, categoriaId: p.categoria?.id || 1, oferta: false });
-                                                    setEditingProd(true);
-                                                }}><FaEdit /></button>
-                                                <button className="btn btn-sm btn-danger" onClick={() => borrarProducto(p.id)}><FaTrash /></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                                {listaOrdenada.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6}>No hay productos.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                        
+                        <h2 className="mt-5">Pedidos (Requiere ADMIN/VENDEDOR)</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuario</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pedidos.map(p => (
+                                    <tr key={p.id}>
+                                        <td>{p.id}</td>
+                                        <td>{p.usuario?.nombreUsuario}</td>
+                                        <td>{p.estado}</td>
+                                        <td>{new Date(p.fechaCreacion).toLocaleDateString('es-CL')}</td>
+                                    </tr>
+                                ))}
+                                {pedidos.length === 0 && <tr><td colSpan={4}>No hay pedidos.</td></tr>}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            )}
-
-            {/* --- CONTENIDO PESTAÑA: USUARIOS --- */}
-            {activeTab === 'usuarios' && (
-                <div className="table-responsive rounded shadow">
-                    <div className="alert alert-info d-flex align-items-center">
-                        <FaUsers className="me-2"/> Gestión de Usuarios registrados en la base de datos.
-                    </div>
-                    <table className="table table-dark table-hover align-middle mb-0">
-                        <thead className="bg-primary text-white">
-                            <tr>
-                                <th>ID</th>
-                                <th>Usuario</th>
-                                <th>Nombre Completo</th>
-                                <th>Email</th>
-                                <th>Rol</th>
-                                <th className="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {usuarios.length > 0 ? usuarios.map(u => (
-                                <tr key={u.id}>
-                                    <td>{u.id}</td>
-                                    <td className="fw-bold">{u.nombreUsuario}</td>
-                                    <td>{u.nombreCompleto || 'No registrado'}</td>
-                                    <td>{u.email}</td>
-                                    <td><span className={`badge ${u.rol === 'ADMIN' ? 'bg-warning text-dark' : 'bg-secondary'}`}>{u.rol}</span></td>
-                                    <td className="text-end">
-                                        <button className="btn btn-sm btn-danger" onClick={() => borrarUsuario(u.id)} title="Eliminar Usuario">
-                                            <FaTrash /> Eliminar
-                                        </button>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr><td colSpan={6} className="text-center py-4">No se encontraron usuarios.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* --- CONTENIDO PESTAÑA: PEDIDOS --- */}
-            {activeTab === 'pedidos' && (
-                <div className="table-responsive rounded shadow">
-                    <table className="table table-dark table-hover align-middle mb-0">
-                        <thead className="table-warning text-dark">
-                            <tr>
-                                <th>ID Pedido</th>
-                                <th>Cliente</th>
-                                <th>Estado</th>
-                                <th>Fecha</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {pedidos.length > 0 ? pedidos.map(p => (
-                                <tr key={p.id}>
-                                    <td>#{p.id}</td>
-                                    <td>{p.usuario?.nombreUsuario || 'Desconocido'}</td>
-                                    <td><span className="badge bg-info">{p.estado}</span></td>
-                                    <td>{new Date(p.fechaCreacion).toLocaleDateString()}</td>
-                                    <td>
-                                        <button className="btn btn-sm btn-outline-light">Ver Detalle</button>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr><td colSpan={5} className="text-center py-4">No hay pedidos registrados.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            </div>
         </div>
     );
 }
