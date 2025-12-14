@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type User = Record<string, any> | null;
+type User = {
+  role?: string | null;
+  rol?: string | null;
+  roles?: string[];
+  authorities?: string[];
+  [key: string]: any;
+} | null;
 
 type AuthContextType = {
   user: User;
@@ -20,37 +26,78 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 SINCRONIZA CON BACKEND AL CARGAR
   useEffect(() => {
-    try {
-      const rawUser = localStorage.getItem("user");
-      const rawToken = localStorage.getItem("token");
-
-      if (rawUser) setUser(JSON.parse(rawUser));
-      if (rawToken) setToken(rawToken);
-    } catch (e) {
-      console.warn("AuthContext: error leyendo localStorage", e);
-    } finally {
+    const storedToken = localStorage.getItem("jwt_token");
+    if (!storedToken) {
       setLoading(false);
+      return;
     }
+
+    fetch("http://localhost:8080/api/auth/me", {
+      headers: {
+        Authorization: `Bearer ${storedToken}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("No auth");
+        return res.json();
+      })
+      .then((userFromBackend) => {
+        const normalizedUser = {
+          ...userFromBackend,
+          role:
+            userFromBackend.role ||
+            userFromBackend.rol ||
+            (Array.isArray(userFromBackend.roles) &&
+              userFromBackend.roles[0]) ||
+            (Array.isArray(userFromBackend.authorities) &&
+              userFromBackend.authorities[0]) ||
+            null,
+        };
+
+        setUser(normalizedUser);
+        setToken(storedToken);
+        localStorage.setItem("user", JSON.stringify(normalizedUser));
+      })
+      .catch(() => {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("jwt_token");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = ({ user, token }: { user: User; token: string }) => {
-    setUser(user);
+    const normalizedUser = {
+      ...user,
+      role:
+        user?.role ||
+        user?.rol ||
+        (Array.isArray(user?.roles) && user.roles[0]) ||
+        (Array.isArray(user?.authorities) && user.authorities[0]) ||
+        null,
+    };
+
+    setUser(normalizedUser);
     setToken(token);
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+    localStorage.setItem("jwt_token", token);
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("jwt_token");
   };
 
   return (

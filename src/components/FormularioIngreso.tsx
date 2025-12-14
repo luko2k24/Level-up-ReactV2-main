@@ -5,6 +5,34 @@ import { api } from "@/api/service/index";
 import type { LoginRequest } from "@/api/api";
 import { useAuthContext } from "@/context/AuthContext";
 
+/**
+ * 🔥 Función CLAVE
+ * Extrae el rol desde el JWT (Spring Security lo incluye ahí)
+ */
+function getRoleFromToken(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    return (
+      payload?.role ||
+      payload?.rol ||
+      payload?.authorities?.[0] ||
+      payload?.roles?.[0] ||
+      null
+    );
+  } catch (e) {
+    console.error("❌ No se pudo leer el rol del token", e);
+    return null;
+  }
+}
+
+/**
+ * 🔥 Tipo local para evitar errores de TypeScript
+ */
+type LoginResponseFixed = {
+  token: string;
+};
+
 const FormularioIngreso: FC = () => {
   const navigate = useNavigate();
   const { login } = useAuthContext();
@@ -28,25 +56,28 @@ const FormularioIngreso: FC = () => {
     const credentials: LoginRequest = { nombreUsuario, password };
 
     try {
-      // 1️⃣ Llamada al backend
-      const response = await api.Auth.login(credentials);
+      // 🔐 1️⃣ Login
+      const response = (await api.Auth.login(
+        credentials
+      )) as LoginResponseFixed;
 
-      console.log("LOGIN RESPONSE:", response);
-
-      // 2️⃣ Extraer token (backend lo envía directo)
-      const token = response?.token ?? null;
-
-      if (!token) {
+      if (!response?.token) {
         throw new Error("Backend no envió token");
       }
 
-      // 3️⃣ Backend NO envía user → lo creamos con el username ingresado
-      const user = { nombreUsuario };
+      // 🔥 2️⃣ Sacar rol desde el JWT
+      const roleFromToken = getRoleFromToken(response.token);
 
-      // 4️⃣ Guardar en AuthContext + localStorage
-      login({ user, token });
+      // 🔥 3️⃣ Crear usuario CON ROL
+      const user = {
+        nombreUsuario,
+        role: roleFromToken,
+      };
 
-      // 5️⃣ Redirigir
+      // 🔥 4️⃣ Guardar en AuthContext + LocalStorage
+      login({ user, token: response.token });
+
+      // 🔥 5️⃣ Redirigir
       navigate("/");
     } catch (err) {
       console.error("❌ Error login:", err);
@@ -70,9 +101,7 @@ const FormularioIngreso: FC = () => {
         </h2>
 
         {error && (
-          <div className="alert alert-danger text-center" role="alert">
-            {error}
-          </div>
+          <div className="alert alert-danger text-center">{error}</div>
         )}
 
         <form onSubmit={manejarEnvio}>
@@ -85,8 +114,6 @@ const FormularioIngreso: FC = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setNombreUsuario(e.target.value)
               }
-              placeholder="Ej: gamer123"
-              autoFocus
               required
             />
           </div>
@@ -100,14 +127,13 @@ const FormularioIngreso: FC = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setPassword(e.target.value)
               }
-              placeholder="********"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="btn btn-success w-100 py-2 fw-bold shadow-sm"
+            className="btn btn-success w-100 fw-bold"
             disabled={loading}
           >
             {loading ? "Ingresando..." : "Ingresar"}
@@ -118,10 +144,7 @@ const FormularioIngreso: FC = () => {
           <hr />
           <p className="mb-0">
             ¿No tienes cuenta?{" "}
-            <NavLink
-              to="/register"
-              className="text-decoration-none fw-bold text-primary"
-            >
+            <NavLink to="/register" className="fw-bold">
               Regístrate aquí
             </NavLink>
           </p>
