@@ -1,25 +1,30 @@
 import { render, screen } from '@testing-library/react';
-import ProductoDetalle from '../src/pages/ProductoDetalle';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
-
-
-
-vi.mock('../data/db', () => ({
-  getProductById: vi.fn(() => undefined), // Devuelve undefined
-  addToCart: vi.fn(),
+vi.mock('@/api/service', () => ({
+  api: {
+    Productos: {
+      obtenerPorId: vi.fn(),
+    },
+  },
 }));
 
+test('shouldShowProductNotFound', async () => {
+  const { api } = await import('@/api/service');
+  (api.Productos.obtenerPorId as any).mockRejectedValue(new Error('404'));
 
-test('shouldShowProductNotFound', () => {
+  const { default: ProductoDetalle } = await import('@/pages/ProductoDetalle');
+
   render(
-    <Router>
-      <ProductoDetalle />
-    </Router>
+    <MemoryRouter initialEntries={['/producto/999']}>
+      <Routes>
+        <Route path="/producto/:id" element={<ProductoDetalle />} />
+      </Routes>
+    </MemoryRouter>
   );
 
-  // Verifica que el mensaje "Producto no encontrado." se muestre en pantalla
-  expect(screen.getByText('Producto no encontrado.')).toBeInTheDocument();
+  // Verifica que el mensaje "Producto no encontrado" se muestre en pantalla
+  expect(await screen.findByText(/Producto no encontrado/i)).toBeInTheDocument();
 });

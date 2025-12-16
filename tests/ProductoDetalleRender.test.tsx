@@ -1,38 +1,49 @@
 import { render, screen } from '@testing-library/react';
-import ProductoDetalle from '../src/pages/ProductoDetalle';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
-// --- INICIO DE LA CORRECCIÓN ---
+vi.mock('@/api/service', () => ({
+  api: {
+    Productos: {
+      obtenerPorId: vi.fn(),
+    },
+  },
+}));
 
-const mockProducto = {
-  id: '1',
+const mockProductoBackend = {
+  idProducto: 1,
   nombre: 'Producto Test',
-  categoria: 'Categoría Test',
+  descripcion: 'Descripción Test',
   precio: 1000,
-  imagen: 'test.jpg',
+  categoria: { id: 10, nombre: 'Categoría Test' },
+  urlImagen: 'test.jpg',
   oferta: true,
 };
 
 
-vi.mock('../data/db', () => ({
-  getProductById: vi.fn(() => mockProducto), // Devuelve el producto
-  addToCart: vi.fn(), // Añadimos la otra función que importa el componente
-}));
+test('shouldRenderProductDetails', async () => {
+  const { api } = await import('@/api/service');
+  (api.Productos.obtenerPorId as any).mockResolvedValue({ data: mockProductoBackend });
 
+  const { default: ProductoDetalle } = await import('@/pages/ProductoDetalle');
 
-test('shouldRenderProductDetails', () => {
   render(
-    <Router>
-      <ProductoDetalle />
-    </Router>
+    <MemoryRouter initialEntries={[`/producto/${mockProductoBackend.idProducto}`]}>
+      <Routes>
+        <Route path="/producto/:id" element={<ProductoDetalle />} />
+      </Routes>
+    </MemoryRouter>
   );
 
   // Verifica que el texto de producto, categoría y precio esté en el documento
-  expect(screen.getByText(/Producto Test/i)).toBeInTheDocument();
-  // Usamos getAllByText porque "Categoría Test" puede aparecer varias veces
+  expect(await screen.findByText(/Producto Test/i)).toBeInTheDocument();
   expect(screen.getAllByText(/Categoría Test/i).length).toBeGreaterThan(0);
-  expect(screen.getByText('$1,000')).toBeInTheDocument();
-  expect(screen.getByAltText('Producto Test')).toBeInTheDocument();
+
+  const precioEsperado = new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+  }).format(1000);
+  expect(screen.getByText(precioEsperado)).toBeInTheDocument();
+  expect(await screen.findByAltText('Producto Test')).toBeInTheDocument();
 });
