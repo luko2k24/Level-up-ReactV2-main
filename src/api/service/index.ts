@@ -17,10 +17,7 @@ export interface UsuarioAPI {
   rol: string;
 }
 
-// ===================== API =====================
-
 export const api = {
-  // ===================== AUTH =====================
   Auth: {
     login: (data: LoginRequest) =>
       apiClient.post<LoginResponse>("/auth/login", data),
@@ -29,60 +26,60 @@ export const api = {
       apiClient.post("/auth/registro", data),
 
     logout: () => {
-      localStorage.removeItem("jwt_token");
+      localStorage.removeItem("token");
     },
 
     isAuthenticated: () => {
-      return !!localStorage.getItem("jwt_token");
+      return !!localStorage.getItem("token");
     },
 
+    // 🔥 CORRECTO PARA SPRING SECURITY
     isAnAdmin: () => {
-      const token = localStorage.getItem("jwt_token");
-      if (!token) return false;
+  const token = localStorage.getItem("token");
+  if (!token) return false;
 
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const roles = payload.role || payload.rol || "";
-        return roles.toUpperCase().includes("ROLE_ADMIN");
-      } catch {
-        return false;
-      }
-    }
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    const role =
+      payload.role ||
+      payload.rol ||
+      (Array.isArray(payload.roles) && payload.roles[0]) ||
+      (Array.isArray(payload.authorities) && payload.authorities[0]) ||
+      "";
+
+    // ✅ ACEPTA ADMIN EN TODAS LAS FORMAS
+    return (
+      role === "ADMIN" ||
+      role === "ROLE_ADMIN" ||
+      role.includes("ADMIN")
+    );
+  } catch {
+    return false;
+  }
+}
   },
 
-  // ===================== PRODUCTOS =====================
   Productos: {
-    listar: () =>
-      apiClient.get<Producto[]>("/productos"),
-
-    // 🔥🔥 ESTE ES EL MÉTODO QUE FALTABA 🔥🔥
+    listar: () => apiClient.get<Producto[]>("/productos"),
     obtenerPorId: (id: number) =>
       apiClient.get<Producto>(`/productos/${id}`),
-
     crear: (data: any) =>
       apiClient.post("/admin/productos", data),
-
     actualizar: (id: number, data: any) =>
       apiClient.put(`/admin/productos/${id}`, data),
-
     eliminar: (id: number) =>
       apiClient.delete(`/admin/productos/${id}`)
   },
 
-  // ===================== USUARIOS =====================
   Usuarios: {
-    listar: () =>
-      apiClient.get<UsuarioAPI[]>("/admin/usuarios"),
-
+    listar: () => apiClient.get<UsuarioAPI[]>("/admin/usuarios"),
     eliminar: (id: number) =>
       apiClient.delete(`/admin/usuarios/${id}`)
   },
 
-  // ===================== PEDIDOS =====================
   Pedidos: {
-    listar: () =>
-      apiClient.get<Pedido[]>("/pedidos"),
-
+    listar: () => apiClient.get<Pedido[]>("/pedidos"),
     crearPedido: (data: PedidoRequest) =>
       apiClient.post("/pedidos", data)
   }

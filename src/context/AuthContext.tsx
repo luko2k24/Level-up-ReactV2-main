@@ -33,9 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 SINCRONIZA CON BACKEND AL CARGAR
+  // 🔥 CARGA INICIAL DESDE LOCALSTORAGE
   useEffect(() => {
-    const storedToken = localStorage.getItem("jwt_token");
+    const storedToken = localStorage.getItem("token");
+
     if (!storedToken) {
       setLoading(false);
       return;
@@ -47,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       },
     })
       .then((res) => {
-        if (!res.ok) throw new Error("No auth");
+        if (!res.ok) throw new Error("No autorizado");
         return res.json();
       })
       .then((userFromBackend) => {
@@ -71,11 +72,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(null);
         setToken(null);
         localStorage.removeItem("user");
-        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("token");
       })
       .finally(() => setLoading(false));
   }, []);
 
+  // ✅ LOGIN CORRECTO
   const login = ({ user, token }: { user: User; token: string }) => {
     const normalizedUser = {
       ...user,
@@ -90,14 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(normalizedUser);
     setToken(token);
     localStorage.setItem("user", JSON.stringify(normalizedUser));
-    localStorage.setItem("jwt_token", token);
+    localStorage.setItem("token", token);
   };
 
+  // ✅ LOGOUT LIMPIO
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("token");
   };
 
   return (
