@@ -1,37 +1,18 @@
 // src/components/FormularioIngreso.tsx
 import React, { useState, ChangeEvent, FormEvent, FC } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
-import { api } from "@/api/service/index";
+import { api } from "@/api/service";
 import type { LoginRequest } from "@/api/api";
 import { useAuthContext } from "@/context/AuthContext";
 
-/**
- * 🔥 Función CLAVE
- * Extrae el rol desde el JWT (Spring Security lo incluye ahí)
- */
 function getRoleFromToken(token: string): string | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-
-    return (
-      payload?.role ||
-      payload?.rol ||
-      payload?.authorities?.[0] ||
-      payload?.roles?.[0] ||
-      null
-    );
-  } catch (e) {
-    console.error("❌ No se pudo leer el rol del token", e);
+    return payload?.role || payload?.rol || null;
+  } catch {
     return null;
   }
 }
-
-/**
- * 🔥 Tipo local para evitar errores de TypeScript
- */
-type LoginResponseFixed = {
-  token: string;
-};
 
 const FormularioIngreso: FC = () => {
   const navigate = useNavigate();
@@ -42,42 +23,35 @@ const FormularioIngreso: FC = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const manejarEnvio = async (evento: FormEvent<HTMLFormElement>) => {
-    evento.preventDefault();
+  const manejarEnvio = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setError("");
     setLoading(true);
 
-    if (!nombreUsuario.trim() || !password.trim()) {
-      setError("Ambos campos son requeridos.");
-      setLoading(false);
-      return;
-    }
-
-    const credentials: LoginRequest = { nombreUsuario, password };
+    const credentials: LoginRequest = {
+      nombreUsuario: nombreUsuario.trim(),
+      password: password.trim(),
+    };
 
     try {
-      // 🔐 1️⃣ Login
-      const response = (await api.Auth.login(
-        credentials
-      )) as LoginResponseFixed;
+      // ✅ AXIOS RESPONSE
+      const response = await api.Auth.login(credentials);
 
-      if (!response?.token) {
+      // 🔴 AQUÍ ESTABA EL ERROR
+      const token = response.data.token;
+
+      if (!token) {
+        console.error("Respuesta backend:", response.data);
         throw new Error("Backend no envió token");
       }
 
-      // 🔥 2️⃣ Sacar rol desde el JWT
-      const roleFromToken = getRoleFromToken(response.token);
+      const role = getRoleFromToken(token);
 
-      // 🔥 3️⃣ Crear usuario CON ROL
-      const user = {
-        nombreUsuario,
-        role: roleFromToken,
-      };
+      login({
+        user: { nombreUsuario, role },
+        token,
+      });
 
-      // 🔥 4️⃣ Guardar en AuthContext + LocalStorage
-      login({ user, token: response.token });
-
-      // 🔥 5️⃣ Redirigir
       navigate("/");
     } catch (err) {
       console.error("❌ Error login:", err);
@@ -88,27 +62,18 @@ const FormularioIngreso: FC = () => {
   };
 
   return (
-    <div
-      className="container d-flex justify-content-center align-items-center py-5"
-      style={{ minHeight: "60vh" }}
-    >
-      <div
-        className="card shadow-lg p-4 border-0"
-        style={{ width: "100%", maxWidth: "400px" }}
-      >
+    <div className="container d-flex justify-content-center align-items-center py-5">
+      <div className="card shadow-lg p-4 border-0" style={{ maxWidth: "400px" }}>
         <h2 className="text-center mb-4 text-primary fw-bold">
           Iniciar Sesión
         </h2>
 
-        {error && (
-          <div className="alert alert-danger text-center">{error}</div>
-        )}
+        {error && <div className="alert alert-danger text-center">{error}</div>}
 
         <form onSubmit={manejarEnvio}>
           <div className="mb-3">
             <label className="form-label fw-bold">Nombre de Usuario</label>
             <input
-              type="text"
               className="form-control"
               value={nombreUsuario}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>

@@ -7,7 +7,7 @@ import {
   Pedido
 } from "@/api/api";
 
-const API_BASE_URL = "http://localhost:8080/api/v1";
+import { apiClient } from "./apiClient";
 
 export interface UsuarioAPI {
   id: number;
@@ -17,117 +17,73 @@ export interface UsuarioAPI {
   rol: string;
 }
 
-// ===================== JWT HELPERS =====================
-
-const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const decodeToken = (token: string): string | null => {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.role || payload.rol || null;
-  } catch {
-    return null;
-  }
-};
-
-const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem("jwt_token");
-};
-
-const isAnAdmin = (): boolean => {
-  const token = localStorage.getItem("jwt_token");
-  if (!token) return false;
-
-  const roles = decodeToken(token);
-  if (!roles) return false;
-
-  return roles
-    .toUpperCase()
-    .split(",")
-    .includes("ROLE_ADMIN");
-};
-
-// ===================== FETCH =====================
-
-async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers
-    }
-  });
-
-  if (!res.ok) throw new Error(res.statusText);
-  if (res.status === 204) return null as T;
-  return res.json();
-}
-
 // ===================== API =====================
 
 export const api = {
+  // ===================== AUTH =====================
   Auth: {
     login: (data: LoginRequest) =>
-      fetchApi<LoginResponse>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify(data)
-      }),
+      apiClient.post<LoginResponse>("/auth/login", data),
+
     register: (data: RegisterRequest) =>
-      fetchApi<void>("/auth/registro", {
-        method: "POST",
-        body: JSON.stringify(data)
-      }),
-    logout: () => localStorage.removeItem("jwt_token"),
-    isAuthenticated,
-    isAnAdmin
+      apiClient.post("/auth/registro", data),
+
+    logout: () => {
+      localStorage.removeItem("jwt_token");
+    },
+
+    isAuthenticated: () => {
+      return !!localStorage.getItem("jwt_token");
+    },
+
+    isAnAdmin: () => {
+      const token = localStorage.getItem("jwt_token");
+      if (!token) return false;
+
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const roles = payload.role || payload.rol || "";
+        return roles.toUpperCase().includes("ROLE_ADMIN");
+      } catch {
+        return false;
+      }
+    }
   },
 
+  // ===================== PRODUCTOS =====================
   Productos: {
-    listar: () => fetchApi<Producto[]>("/productos"),
+    listar: () =>
+      apiClient.get<Producto[]>("/productos"),
+
+    // 🔥🔥 ESTE ES EL MÉTODO QUE FALTABA 🔥🔥
+    obtenerPorId: (id: number) =>
+      apiClient.get<Producto>(`/productos/${id}`),
+
     crear: (data: any) =>
-      fetchApi("/admin/productos", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: getAuthHeader()
-      }),
+      apiClient.post("/admin/productos", data),
+
     actualizar: (id: number, data: any) =>
-      fetchApi(`/admin/productos/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        headers: getAuthHeader()
-      }),
+      apiClient.put(`/admin/productos/${id}`, data),
+
     eliminar: (id: number) =>
-      fetchApi(`/admin/productos/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeader()
-      })
+      apiClient.delete(`/admin/productos/${id}`)
   },
 
+  // ===================== USUARIOS =====================
   Usuarios: {
     listar: () =>
-      fetchApi<UsuarioAPI[]>("/admin/usuarios", {
-        headers: getAuthHeader()
-      }),
+      apiClient.get<UsuarioAPI[]>("/admin/usuarios"),
+
     eliminar: (id: number) =>
-      fetchApi(`/admin/usuarios/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeader()
-      })
+      apiClient.delete(`/admin/usuarios/${id}`)
   },
 
+  // ===================== PEDIDOS =====================
   Pedidos: {
     listar: () =>
-      fetchApi<Pedido[]>("/pedidos", {
-        headers: getAuthHeader()
-      }),
+      apiClient.get<Pedido[]>("/pedidos"),
+
     crearPedido: (data: PedidoRequest) =>
-      fetchApi("/pedidos", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: getAuthHeader()
-      })
+      apiClient.post("/pedidos", data)
   }
 };

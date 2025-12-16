@@ -1,121 +1,78 @@
 // src/components/ProductCard.tsx
+import React, { FC, useState } from "react";
+import { Link } from "react-router-dom";
+import { ProductoNormalizado } from "@/utils/normalizarProducto";
 
-import React, { FC, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Producto } from '../api/api';
-
-const FALLBACK = '/img/productos/placeholder.png';
+const FALLBACK = "/img/productos/placeholder.png";
 
 interface TarjetaProductoProps {
-    producto: Producto | null;
-    onAdd?: (producto: Producto) => void;   
-    onView?: () => void;
+  producto: ProductoNormalizado;
+  onAdd?: (producto: ProductoNormalizado) => void; // ✅ FIX
 }
 
-const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd, onView }) => {
+const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd }) => {
+  const [cargando, setCargando] = useState(false);
 
-    const [cargando, setCargando] = useState(false);
+  const { id, nombre, precio, categoria, oferta, urlImagen } = producto;
 
-    if (!producto) return null;
+  const imagen = urlImagen || FALLBACK;
 
-    // 🔥🔥 USAR EL ID REAL QUE VIENE DEL BACKEND 🔥🔥
-    const id = (producto as any).idProducto || producto.id;
+  const precioFormateado = Number(precio).toLocaleString("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  });
 
-    const { nombre, precio, categoria } = producto;
-    const urlImagen = (producto as any).urlImagen;
-    const oferta = producto.oferta;
+  const handleAddToCartClick = () => {
+    if (!onAdd || cargando) return;
+    setCargando(true);
+    onAdd(producto);
+    setCargando(false);
+  };
 
-    const finalImageUrl = urlImagen ? `/${urlImagen}` : FALLBACK;
+  return (
+    <div className="card h-100 bg-dark text-white border-0 shadow">
+      {/* IMAGEN */}
+      <div className="ratio ratio-4x3 overflow-hidden rounded-top">
+        <img
+          src={imagen}
+          alt={nombre}
+          onError={(e) => (e.currentTarget.src = FALLBACK)}
+          className="object-fit-cover w-100 h-100"
+        />
+      </div>
 
-    const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        (e.currentTarget as HTMLImageElement).src = FALLBACK;
-    };
+      {/* BODY */}
+      <div className="card-body d-flex flex-column">
+        <span className="badge bg-success mb-2 text-uppercase">
+          {categoria.nombre}
+        </span>
 
-    const precioFormateado = Number(precio).toLocaleString('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        maximumFractionDigits: 0
-    });
+        <h5 className="text-truncate">{nombre}</h5>
 
-    const handleAddToCartClick = async () => {
-        if (!onAdd || cargando) return;
-        setCargando(true);
+        <p className="fs-4 fw-bold text-success mt-auto">
+          {precioFormateado}
+        </p>
 
-        try {
-            onAdd(producto); 
-        } catch (error) {
-            console.error("Error agregando al carrito:", error);
-        } finally {
-            setCargando(false);
-        }
-    };
+        <div className="d-flex gap-2 mt-2">
+          <Link
+            to={`/productos/${id}`}
+            className="btn btn-outline-light btn-sm w-50"
+          >
+            Ver Detalle
+          </Link>
 
-    const isViewLink = id && onView === undefined;
-
-    return (
-        <div className="card h-100 shadow-sm border-0 bg-dark text-white">
-
-            <div className="ratio ratio-4x3 product-media overflow-hidden rounded-top">
-                <img
-                    src={finalImageUrl}
-                    alt={nombre}
-                    onError={handleError}
-                    loading="lazy"
-                    className="object-fit-cover w-100 h-100"
-                />
-            </div>
-
-            <div className="card-body d-flex flex-column p-3">
-
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                    {categoria?.nombre && (
-                        <span className="badge badge-category text-uppercase fw-normal">
-                            {categoria.nombre}
-                        </span>
-                    )}
-                    {oferta && <span className="badge badge-oferta fw-bold">¡Oferta!</span>}
-                </div>
-
-                <h5 className="card-title text-truncate mb-1">{nombre}</h5>
-                <p className="text-muted small">{categoria?.nombre ?? ''}</p>
-
-                <p className="fs-4 fw-bold text-success mb-3 mt-auto">{precioFormateado}</p>
-
-                <div className="d-flex gap-2">
-
-                    {isViewLink ? (
-                        <Link
-                            to={`/productos/${id}`}
-                            className="btn btn-outline-light btn-sm flex-grow-1"
-                        >
-                            Ver Detalle
-                        </Link>
-                    ) : (
-                        <button
-                            className="btn btn-outline-light btn-sm flex-grow-1"
-                            onClick={onView}
-                        >
-                            Ver Detalle
-                        </button>
-                    )}
-
-                    <button
-                        className="btn btn-warning btn-sm flex-grow-1"
-                        onClick={handleAddToCartClick}
-                        disabled={cargando}
-                    >
-                        {cargando ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                Agregando...
-                            </>
-                        ) : 'Agregar al Carrito'}
-                    </button>
-
-                </div>
-            </div>
+          <button
+            className="btn btn-warning btn-sm w-50"
+            onClick={handleAddToCartClick}
+            disabled={cargando}
+          >
+            {cargando ? "Agregando..." : "Agregar"}
+          </button>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default ProductCard;

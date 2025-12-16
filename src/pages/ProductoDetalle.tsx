@@ -1,174 +1,180 @@
-import React, { FC, useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { api } from '../api/service/index';
-import { Producto } from '../api/api'; 
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { api } from "@/api/service";
+import { Producto } from "@/api/api";
+import { normalizarProducto } from "@/utils/normalizarProducto";
 
+const FALLBACK_IMAGE = "/img/productos/placeholder.png";
 
+// ---------------- NOT FOUND ----------------
 const NotFoundError = () => (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        {/* Utilizando el estilo .panel de tu tema */}
-        <div className="panel p-5 text-center shadow-lg" style={{ maxWidth: '600px', margin: 'auto' }}>
-            <h2 className="text-white mb-3">Producto no encontrado.</h2>
-            <p className="text-muted mb-4">Asegúrate de que la URL sea correcta o el producto exista en la base de datos.</p>
-            <Link className="btn btn-warning fw-bold" to="/categorias">Volver a la tienda</Link>
-        </div>
+  <div
+    className="d-flex justify-content-center align-items-center"
+    style={{ minHeight: "60vh" }}
+  >
+    <div className="panel p-5 text-center shadow-lg" style={{ maxWidth: 600 }}>
+      <h2 className="text-white mb-3">Producto no encontrado</h2>
+      <p className="text-muted mb-4">
+        El producto no existe o fue eliminado.
+      </p>
+      <Link className="btn btn-warning fw-bold" to="/categorias">
+        Volver a la tienda
+      </Link>
     </div>
+  </div>
 );
 
-// --- Componente Principal de Detalle ---
+// ---------------- COMPONENTE ----------------
 export default function ProductoDetalle() {
-  // Extrae el 'id' de los parámetros de la URL
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
 
-  // Estados para la API
-  const [producto, setProducto] = useState<Producto | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [producto, setProducto] = useState<Producto | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Efecto para cargar el producto de la API
-  useEffect(() => {
-    if (!id) {
-      setError("ID de producto no proporcionado.");
-      setLoading(false);
-      return;
-    }
+  // ---------------- CARGA PRODUCTO ----------------
+  useEffect(() => {
+    if (!id) return;
 
-    const cargarProducto = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const productoId = parseInt(id, 10);
-        if (isNaN(productoId)) {
-          throw new Error("ID de producto inválido.");
-        }
+    const cargarProducto = async () => {
+      try {
+        setLoading(true);
 
-        // 🚀 LLAMADA A LA API: GET /api/v1/productos/{id}
-        const p = await api.Productos.obtenerPorId(productoId);
-        setProducto(p);
-        
-      } catch (err: any) {
-        console.error("Error al obtener detalle:", err);
-        setError(err.message || "Producto no encontrado o error del servidor.");
-        setProducto(undefined); 
-      } finally {
-        setLoading(false);
-      }
-    };
+        // Axios devuelve { data }
+        const res = await api.Productos.obtenerPorId(Number(id));
 
-    cargarProducto();
-  }, [id]);
+        // Normalizamos el producto
+        const productoNormalizado = normalizarProducto(res.data);
 
-  // Usamos 'p' como alias y extraemos info con casteos temporales
-  const p = producto;
-  // Asume que la URL de la imagen se almacena en una propiedad 'urlImagen' si no está en 'imagen'
-  const imagen = (p as any)?.urlImagen || (p as any)?.imagen || 'https://placehold.co/600x400';
-  const oferta = (p as any)?.oferta; 
-  const categoriaNombre = p?.categoria ? p.categoria.nombre : 'Periféricos';
+        setProducto(productoNormalizado);
+      } catch (error) {
+        console.error("Error cargando producto:", error);
+        setProducto(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    cargarProducto();
+  }, [id]);
 
-  // Función para manejar la adición al carrito
-  const handleAddToCart = (producto: Producto) => {
-    alert(`Añadiendo ${producto.nombre} (ID: ${producto.id}) al carrito. Usar lógica de useCart.`);
-  };
-  
-  // Manejo del estado de carga
-  if (loading) {
-    return <div className="text-center p-5 text-info">Cargando detalles...</div>;
-  }
+  // ---------------- ESTADOS ----------------
+  if (loading) {
+    return (
+      <div className="text-center p-5 text-info">
+        Cargando detalles...
+      </div>
+    );
+  }
 
-  // Manejo del estado: Producto no encontrado (Si p es null/undefined)
-  if (!p) {
-    return <NotFoundError />;
-  }
+  if (!producto) {
+    return <NotFoundError />;
+  }
 
-  // --- Renderizado normal del producto ---
-  return (
-    <div className="container py-5">
-      
-      {/* 1. HEADER Y BREADCRUMB */}
-      <nav className="breadcrumb-gamer mb-2 small text-light">
-        <Link to="/categorias" className="link-light text-decoration-none">Categorías</Link>
-        <span className="sep mx-2">/</span>
-        <span className="text-primary">{categoriaNombre}</span>
-      </nav>
+  // ---------------- RENDER ----------------
+  return (
+    <div className="container py-5">
+      {/* BREADCRUMB */}
+      <nav className="breadcrumb-gamer mb-2 small text-light">
+        <Link to="/categorias" className="link-light text-decoration-none">
+          Categorías
+        </Link>
+        <span className="mx-2">/</span>
+        <span className="text-primary">
+          {producto.categoria.nombre}
+        </span>
+      </nav>
 
-      <h1 className="neon-title text-primary mb-1">{p.nombre}</h1>
-      <div className="neon-sub text-muted small mb-4">{categoriaNombre}</div>
+      <h1 className="neon-title text-primary mb-1">
+        {producto.nombre}
+      </h1>
 
-      <div className="row g-4">
-        
-        {/* 2. COLUMNA IZQUIERDA: IMAGEN */}
-        <div className="col-12 col-lg-6">
-          <div className="panel p-3 border-0">
-            <div className="ratio ratio-4x3 product-hero overflow-hidden rounded-3">
-              <img 
-                src={imagen} 
-                alt={p.nombre} 
-                loading="lazy" 
-                className="object-cover w-full h-full" 
-              />
-            </div>
-          </div>
-        </div>
+      <div className="neon-sub text-muted small mb-4">
+        {producto.categoria.nombre}
+      </div>
 
-        {/* 3. COLUMNA DERECHA: INFO / PRECIO / CTA */}
-        <div className="col-12 col-lg-6">
-          <div className="panel p-4 shadow-lg h-100 d-flex flex-column justify-content-between">
-            
-            <div>
-              {/* Tags de Categoría y Oferta */}
-              <div className="d-flex align-items-center mb-3">
-                <span className="badge badge-category me-2 text-uppercase">{categoriaNombre}</span>
-                {oferta && <span className="badge badge-oferta text-uppercase">¡Oferta!</span>}
-              </div>
+      <div className="row g-4">
+        {/* IMAGEN */}
+        <div className="col-12 col-lg-6">
+          <div className="panel p-3">
+            <div className="ratio ratio-4x3 overflow-hidden rounded-3">
+              <img
+                src={
+                  producto.urlImagen
+                    ? `/img/productos/${producto.urlImagen}`
+                    : FALLBACK_IMAGE
+                }
+                alt={producto.nombre}
+                onError={(e) => {
+                  e.currentTarget.src = FALLBACK_IMAGE;
+                }}
+                className="object-fit-cover w-100 h-100"
+              />
+            </div>
+          </div>
+        </div>
 
-              {/* Precio formateado a CLP con tu color primary */}
-              <h3 className="text-primary fw-bold display-6 mb-4">
-                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(p.precio)}
-              </h3>
+        {/* INFO */}
+        <div className="col-12 col-lg-6">
+          <div className="panel p-4 shadow-lg h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div className="d-flex align-items-center mb-3">
+                <span className="badge badge-category me-2 text-uppercase">
+                  {producto.categoria.nombre}
+                </span>
 
-              {/* Especificaciones / Listado de información */}
-              <ul className="list-unstyled small text-white mb-4">
-                <li>• Garantía 6 meses</li>
-                <li>• Despacho a todo Chile</li>
-                <li>• Imagen referencial</li>
-              </ul>
-            </div>
+                {producto.oferta && (
+                  <span className="badge badge-oferta">
+                    ¡Oferta!
+                  </span>
+                )}
+              </div>
 
-            {/* Botones de acción */}
-            <div className="d-grid gap-2 mt-auto pt-3">
-              {/* Botón Agregar al Carrito (btn-warning de Bootstrap) */}
-              <button
-                className="btn btn-warning fw-bold btn-lg"
-                onClick={() => handleAddToCart(p)}
-              >
-                Agregar al carrito
-              </button>
-              
-              {/* Botón Ir al Carrito (Neón, usando btn-outline-light para el borde neón) */}
-              <Link 
-                to="/carrito" 
-                className="btn btn-outline-light fw-bold btn-lg"
-                style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
-              >
-                Ir al carrito
-              </Link>
-            </div>
-          </div>
-        </div>
+              <h3 className="text-primary fw-bold display-6 mb-4">
+                {new Intl.NumberFormat("es-CL", {
+                  style: "currency",
+                  currency: "CLP",
+                  maximumFractionDigits: 0,
+                }).format(producto.precio)}
+              </h3>
 
-        {/* 4. COLUMNA ABAJO: DESCRIPCIÓN (Ocupa el ancho completo) */}
-        <div className="col-12 mt-4">
-          <div className="panel p-4 shadow-lg">
-            <h3 className="neon-title text-primary mb-3">Descripción</h3>
-            <p className="text-muted mb-0">
-              {p.descripcion || `**${p.nombre}** de la categoría **${categoriaNombre}**. Producto de demostración para la evaluación: catálogo, carrito y checkout con look gamer y Bootstrap.`}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+              <ul className="list-unstyled small text-white mb-4">
+                <li>• Garantía 6 meses</li>
+                <li>• Despacho a todo Chile</li>
+                <li>• Imagen referencial</li>
+              </ul>
+            </div>
+
+            <div className="d-grid gap-2 mt-auto pt-3">
+              <button className="btn btn-warning fw-bold btn-lg">
+                Agregar al carrito
+              </button>
+
+              <Link
+                to="/carrito"
+                className="btn btn-outline-light fw-bold btn-lg"
+                style={{
+                  borderColor: "var(--primary)",
+                  color: "var(--primary)",
+                }}
+              >
+                Ir al carrito
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* DESCRIPCIÓN */}
+        <div className="col-12 mt-4">
+          <div className="panel p-4 shadow-lg">
+            <h3 className="neon-title text-primary mb-3">
+              Descripción
+            </h3>
+            <p className="text-muted mb-0">
+              {producto.descripcion || "Sin descripción disponible."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
