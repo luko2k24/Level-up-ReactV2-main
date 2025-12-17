@@ -1,6 +1,8 @@
 // src/api/service/ordenes.ts
 
-const API_URL = "http://localhost:8080/api/v1/pedidos";
+import { API_BASE_URL } from "@/api/config";
+
+const API_URL = `${API_BASE_URL}/pedidos`;
 
 /**
  * ✅ Checkout público (SIN JWT)

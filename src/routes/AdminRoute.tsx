@@ -9,13 +9,25 @@ export default function AdminRoute({
 }) {
   const { isAuthenticated, user, loading } = useAuthContext();
 
+  const isAdmin = (() => {
+    const role =
+      user?.role ??
+      user?.rol ??
+      (Array.isArray(user?.roles) ? user?.roles?.[0] : undefined) ??
+      (Array.isArray(user?.authorities) ? user?.authorities?.[0] : undefined) ??
+      null;
+
+    if (!role) return false;
+    return role === 'ROLE_ADMIN' || role === 'ADMIN' || String(role).includes('ADMIN');
+  })();
+
   if (loading) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== "ROLE_ADMIN") {
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 

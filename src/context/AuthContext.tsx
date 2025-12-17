@@ -42,39 +42,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    fetch("http://localhost:8080/api/auth/me", {
-      headers: {
-        Authorization: `Bearer ${storedToken}`,
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("No autorizado");
-        return res.json();
-      })
-      .then((userFromBackend) => {
-        const normalizedUser = {
-          ...userFromBackend,
-          role:
-            userFromBackend.role ||
-            userFromBackend.rol ||
-            (Array.isArray(userFromBackend.roles) &&
-              userFromBackend.roles[0]) ||
-            (Array.isArray(userFromBackend.authorities) &&
-              userFromBackend.authorities[0]) ||
-            null,
-        };
+    // Rehidratar desde el token (no depende del backend).
+    try {
+      const payload = JSON.parse(atob(storedToken.split(".")[1] || ""));
 
-        setUser(normalizedUser);
-        setToken(storedToken);
-        localStorage.setItem("user", JSON.stringify(normalizedUser));
-      })
-      .catch(() => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      })
-      .finally(() => setLoading(false));
+      const role =
+        payload.role ||
+        payload.rol ||
+        (Array.isArray(payload.roles) && payload.roles[0]) ||
+        (Array.isArray(payload.authorities) && payload.authorities[0]) ||
+        null;
+
+      const normalizedUser = {
+        ...payload,
+        role,
+      };
+
+      setUser(normalizedUser);
+      setToken(storedToken);
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+    } catch {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // ✅ LOGIN CORRECTO

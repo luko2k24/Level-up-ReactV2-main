@@ -44,3 +44,16 @@ El proyecto utiliza principalmente las siguientes tecnologías y lenguajes:
 ### Instalar dependencias
 ```bash
 npm i
+
+```
+
+---
+
+## Configuración del backend (dev)
+
+Por defecto el frontend usa `API_BASE_URL = /api/v1` y Vite hace proxy al backend.
+
+- Crea un archivo `.env` (puedes copiar `.env.example`).
+- Variables:
+  - `VITE_API_PROXY_TARGET` (por defecto `http://localhost:8080`)
+  - `VITE_API_BASE_URL` (por defecto `/api/v1`, o una URL completa si no usas proxy)

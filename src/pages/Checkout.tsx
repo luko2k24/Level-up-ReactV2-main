@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import type { ItemCarrito } from "@/api/api";
+import { API_BASE_URL } from "@/api/config";
 
 const formatearCLP = (valor: number): string =>
   new Intl.NumberFormat("es-CL", {
@@ -48,7 +49,7 @@ export default function Checkout() {
       };
 
       const response = await fetch(
-        "http://localhost:8080/api/v1/pedidos/publico",
+        `${API_BASE_URL}/pedidos/publico`,
         {
           method: "POST",
           headers: {

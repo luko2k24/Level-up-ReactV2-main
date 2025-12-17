@@ -65,11 +65,11 @@ export const api = {
     obtenerPorId: (id: number) =>
       apiClient.get<Producto>(`/productos/${id}`),
     crear: (data: any) =>
-      apiClient.post("/admin/productos", data),
+      apiClient.post("/productos/admin", data),
     actualizar: (id: number, data: any) =>
-      apiClient.put(`/admin/productos/${id}`, data),
+      apiClient.put(`/productos/admin/${id}`, data),
     eliminar: (id: number) =>
-      apiClient.delete(`/admin/productos/${id}`)
+      apiClient.delete(`/productos/admin/${id}`)
   },
 
   Usuarios: {

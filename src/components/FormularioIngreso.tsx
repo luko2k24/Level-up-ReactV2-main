@@ -8,7 +8,13 @@ import { useAuthContext } from "@/context/AuthContext";
 function getRoleFromToken(token: string): string | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload?.role || payload?.rol || null;
+    return (
+      payload?.role ||
+      payload?.rol ||
+      (Array.isArray(payload?.roles) && payload.roles[0]) ||
+      (Array.isArray(payload?.authorities) && payload.authorities[0]) ||
+      null
+    );
   } catch {
     return null;
   }
