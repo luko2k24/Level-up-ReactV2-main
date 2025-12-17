@@ -4,6 +4,32 @@
   color: var(--text);
 }
 
+/* Encabezado de sección (Usuarios/Pedidos) */
+.admin-section-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 8%, rgba(12,19,26,.92)),
+    rgba(12,19,26,.72)
+  );
+}
+
+.admin-section-title{
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: var(--text);
+}
+
+.admin-section-meta{
+  color: var(--muted);
+  font-weight: 700;
+}
+
 /* Tabs estilo “pill” consistente con la paleta */
 .admin-tabs .nav-link{
   background: var(--surface);
@@ -46,6 +72,24 @@
   box-shadow: var(--shadow);
 }
 
+/* Cuando la tabla está dentro de .panel, evita doble borde/sombra */
+.panel .admin-table{
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* Acciones: botones en fila, sin depender de márgenes sueltos */
+.admin-actions{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
 .admin-table thead th{
   color: var(--muted);
   background: linear-gradient(
@@ -54,12 +98,35 @@
     var(--surface)
   );
   border-color: rgba(255,255,255,.08);
+  font-weight: 800;
+  letter-spacing: .2px;
+  padding: .85rem .95rem;
 }
 
 .admin-table tbody td{
   border-color: rgba(255,255,255,.06);
+  padding: .8rem .95rem;
+  vertical-align: middle;
+}
+
+/* Zebra sutil para lectura */
+.admin-table tbody tr:nth-child(even){
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .admin-table tbody tr:hover{
   background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Botones en admin: un poco más “tech” */
+.admin-actions .btn{
+  border-radius: 12px;
+}
+
+.admin-actions .btn-outline-light{
+  border-color: rgba(255,255,255,.28);
+}
+
+.admin-actions .btn-outline-light:hover{
+  border-color: var(--primary);
 }

@@ -22,13 +22,13 @@ export default function Ofertas() {
         async function cargarProductos() {
             try {
                 // 🚀 LLAMADA: Usamos la sintaxis correcta: api.Productos.listar()
-                const todosProductos = await api.Productos.listar();
+                const res = await api.Productos.listar();
+                const todosProductos: Producto[] = Array.isArray(res.data) ? res.data : [];
 
-                // Filtramos los productos que tienen "oferta" en su descripción
+                // Preferimos el flag `oferta` si viene del backend.
+                // Fallback: algunos datos antiguos marcaban oferta en la descripción.
                 const productosEnOferta = todosProductos.filter((p: Producto) =>
-                    
-                    
-                    (p.descripcion ?? '').toLowerCase().includes('oferta')
+                    Boolean(p.oferta) || (p.descripcion ?? "").toLowerCase().includes("oferta")
                 );
 
                 setProductos(productosEnOferta);

@@ -7,12 +7,23 @@ import {
   FaBoxOpen,
   FaUsers,
   FaClipboardList,
+  FaEdit,
   FaTrash,
 } from "react-icons/fa";
 import "../styles/admin.css";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
+
+  const ROLES_DISPONIBLES = [
+    "ROLE_ADMIN",
+    "ROLE_VENDEDOR",
+    "ROLE_CLIENTE",
+    // tolerancia por si el backend acepta/retorna sin prefijo
+    "ADMIN",
+    "VENDEDOR",
+    "CLIENTE",
+  ];
 
   const [activeTab, setActiveTab] =
     useState<"productos" | "usuarios" | "pedidos">("productos");
@@ -23,6 +34,12 @@ export default function AdminPanel() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioAPI[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editingUserRole, setEditingUserRole] = useState<string>("ROLE_CLIENTE");
+
+  const [togglingOfertaId, setTogglingOfertaId] = useState<number | null>(null);
 
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: "",
@@ -41,6 +58,48 @@ export default function AdminPanel() {
 
   const normalizeArray = <T,>(data: unknown): T[] =>
     Array.isArray(data) ? (data as T[]) : [];
+
+  const resetProductoForm = () => {
+    setNuevoProducto({
+      nombre: "",
+      descripcion: "",
+      precio: "",
+      categoriaId: "",
+      urlImagen: "",
+      oferta: false,
+    });
+    setEditingProductId(null);
+  };
+
+  const startEditUserRole = (u: UsuarioAPI) => {
+    setError("");
+    setEditingUserId(u.id);
+    setEditingUserRole(u.rol || "ROLE_CLIENTE");
+  };
+
+  const cancelEditUserRole = () => {
+    setEditingUserId(null);
+    setEditingUserRole("ROLE_CLIENTE");
+  };
+
+  const normalizeRoleForBackend = (role: string): string => {
+    // backend espera hasRole('ADMIN') => authority 'ROLE_ADMIN'
+    if (!role) return "ROLE_CLIENTE";
+    const upper = String(role).toUpperCase();
+    if (upper.startsWith("ROLE_")) return upper;
+    return `ROLE_${upper}`;
+  };
+
+  const guardarRolUsuario = async (id: number) => {
+    setError("");
+    try {
+      await api.Usuarios.actualizarRol(id, normalizeRoleForBackend(editingUserRole));
+      cancelEditUserRole();
+      await cargarTodo();
+    } catch (e) {
+      setError(`Cambiar rol: ${getApiErrorMessage(e)}`);
+    }
+  };
 
   const cargarTodo = async () => {
     setLoading(true);
@@ -85,7 +144,7 @@ export default function AdminPanel() {
     }
   };
 
-  const crearProducto = async (e: React.FormEvent) => {
+  const guardarProducto = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -106,28 +165,97 @@ export default function AdminPanel() {
     }
 
     try {
-      await api.Productos.crear({
+      const payload = {
         nombre: nuevoProducto.nombre,
         descripcion: nuevoProducto.descripcion || undefined,
         precio,
-        oferta: Boolean(nuevoProducto.oferta),
         urlImagen: nuevoProducto.urlImagen || undefined,
         categoria: { id: categoriaId },
-      });
 
-      setNuevoProducto({
-        nombre: "",
-        descripcion: "",
-        precio: "",
-        categoriaId: "",
-        urlImagen: "",
-        oferta: false,
-      });
+        // Nota: id lo maneja el backend
+      };
 
-      await cargarTodo();
+      if (editingProductId != null) {
+        await api.Productos.actualizar(editingProductId, payload);
+
+        // Re-sincroniza el producto editado (evita depender del listado completo)
+        try {
+          const refreshed = await api.Productos.obtenerPorId(editingProductId);
+          const updated = refreshed.data;
+          setProductos((prev) => prev.map((x) => (x.id === editingProductId ? updated : x)));
+        } catch {
+          // si falla, recarga todo como fallback
+          await cargarTodo();
+        }
+      } else {
+        await api.Productos.crear(payload);
+        await cargarTodo();
+      }
+
+      resetProductoForm();
     } catch (e) {
-      setError(`Crear producto: ${getApiErrorMessage(e)}`);
+      const prefix = editingProductId != null ? "Editar producto" : "Crear producto";
+      setError(`${prefix}: ${getApiErrorMessage(e)}`);
     }
+  };
+
+  const toggleOfertaProducto = async (p: Producto) => {
+    setError("");
+
+    const categoriaId = Number(p.categoria?.id);
+    if (!Number.isFinite(categoriaId) || categoriaId <= 0) {
+      setError("No se puede cambiar oferta: el producto no tiene categoría válida");
+      return;
+    }
+
+    setTogglingOfertaId(p.id);
+    try {
+      const expectedOferta = !Boolean(p.oferta);
+      const payload = {
+        nombre: p.nombre,
+        descripcion: p.descripcion || undefined,
+        precio: Number(p.precio),
+        oferta: expectedOferta,
+        urlImagen: p.urlImagen || undefined,
+        categoria: { id: categoriaId },
+      };
+
+      await api.Productos.actualizar(p.id, payload);
+
+      // Confirma con el backend (si no persiste el campo, aquí se nota)
+      try {
+        const refreshed = await api.Productos.obtenerPorId(p.id);
+        const updated = refreshed.data;
+        setProductos((prev) => prev.map((x) => (x.id === p.id ? updated : x)));
+
+        if (Boolean(updated?.oferta) !== expectedOferta) {
+          setError(
+            "El backend respondió, pero no está guardando el campo 'oferta'. Revisa que exista en la entidad/DB y en el update del backend."
+          );
+        }
+      } catch {
+        await cargarTodo();
+      }
+    } catch (e) {
+      setError(`Cambiar oferta: ${getApiErrorMessage(e)}`);
+    } finally {
+      setTogglingOfertaId(null);
+    }
+  };
+
+  const editarProducto = (p: Producto) => {
+    setError("");
+    setActiveTab("productos");
+    setEditingProductId(p.id);
+    setNuevoProducto({
+      nombre: p.nombre ?? "",
+      descripcion: p.descripcion ?? "",
+      precio: String(p.precio ?? ""),
+      categoriaId: String(p.categoria?.id ?? ""),
+      urlImagen: p.urlImagen ?? "",
+      oferta: Boolean(p.oferta),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const eliminarProducto = async (id: number) => {
@@ -207,9 +335,22 @@ export default function AdminPanel() {
       {activeTab === "productos" && (
         <>
           <div className="panel p-3 mb-4">
-            <h5 className="mb-3">Crear producto</h5>
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
+              <h5 className="mb-0">
+                {editingProductId != null ? "Editar producto" : "Crear producto"}
+              </h5>
+              {editingProductId != null && (
+                <button
+                  type="button"
+                  className="btn btn-outline-light btn-sm"
+                  onClick={resetProductoForm}
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
 
-            <form className="row g-2" onSubmit={crearProducto}>
+            <form className="row g-2" onSubmit={guardarProducto}>
               <div className="col-12 col-lg-4">
                 <label className="form-label">Nombre</label>
                 <input
@@ -283,135 +424,211 @@ export default function AdminPanel() {
                 />
               </div>
 
-              <div className="col-12 col-lg-4 d-flex align-items-end">
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    checked={nuevoProducto.oferta}
-                    onChange={(e) =>
-                      setNuevoProducto((p) => ({
-                        ...p,
-                        oferta: e.target.checked,
-                      }))
-                    }
-                    id="oferta"
-                  />
-                  <label className="form-check-label" htmlFor="oferta">
-                    Oferta
-                  </label>
-                </div>
-              </div>
-
               <div className="col-12">
                 <button className="btn btn-primary fw-bold" type="submit">
-                  Crear
+                  {editingProductId != null ? "Guardar cambios" : "Crear"}
                 </button>
               </div>
             </form>
           </div>
 
-          <table className="admin-table table table-hover">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Precio</th>
-                <th>Categoría</th>
-                <th style={{ width: 90 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.id}</td>
-                  <td>{p.nombre}</td>
-                  <td>{CLP.format(p.precio)}</td>
-                  <td>{p.categoria?.nombre ?? p.categoria?.id}</td>
-                  <td className="text-end">
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => eliminarProducto(p.id)}
-                      title="Eliminar"
-                    >
-                      <FaTrash />
-                    </button>
-                  </td>
+          <div className="panel p-0">
+            <div className="admin-section-head">
+              <div className="admin-section-title">Productos</div>
+              <div className="admin-section-meta">Total: {productos.length}</div>
+            </div>
+
+            <table className="admin-table table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Precio</th>
+                  <th>Categoría</th>
+                  <th>Oferta</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {productos.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.id}</td>
+                    <td>{p.nombre}</td>
+                    <td>{CLP.format(p.precio)}</td>
+                    <td>{p.categoria?.nombre ?? p.categoria?.id}</td>
+                    <td>
+                      {p.oferta ? (
+                        <span className="badge badge-oferta">Sí</span>
+                      ) : (
+                        <span className="text-muted">No</span>
+                      )}
+                    </td>
+                    <td className="text-end">
+                      <div className="admin-actions">
+                        <button
+                          className={`btn btn-sm ${
+                            p.oferta ? "btn-outline-warning" : "btn-outline-success"
+                          }`}
+                          onClick={() => toggleOfertaProducto(p)}
+                          disabled={togglingOfertaId === p.id}
+                          title={p.oferta ? "Quitar oferta" : "Poner en oferta"}
+                        >
+                          {togglingOfertaId === p.id
+                            ? "..."
+                            : p.oferta
+                            ? "Quitar oferta"
+                            : "Poner oferta"}
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-light"
+                          onClick={() => editarProducto(p)}
+                          title="Editar"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => eliminarProducto(p.id)}
+                          title="Eliminar"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 
       {/* ================= USUARIOS ================= */}
       {activeTab === "usuarios" && (
-        <table className="admin-table table table-hover">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Usuario</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th style={{ width: 90 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {usuarios.map((u) => (
-              <tr key={u.id}>
-                <td>{u.id}</td>
-                <td>{u.nombreUsuario}</td>
-                <td>{u.email}</td>
-                <td>{u.rol}</td>
-                <td className="text-end">
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => eliminarUsuario(u.id)}
-                    title="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
+        <div className="panel p-0">
+          <div className="admin-section-head">
+            <div className="admin-section-title">Usuarios</div>
+            <div className="admin-section-meta">Total: {usuarios.length}</div>
+          </div>
+
+          <table className="admin-table table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {usuarios.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.id}</td>
+                  <td>{u.nombreUsuario}</td>
+                  <td>{u.email}</td>
+                  <td>
+                    {editingUserId === u.id ? (
+                      <select
+                        className="form-select form-select-sm"
+                        value={editingUserRole}
+                        onChange={(e) => setEditingUserRole(e.target.value)}
+                      >
+                        {ROLES_DISPONIBLES.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      u.rol
+                    )}
+                  </td>
+                  <td className="text-end">
+                    <div className="admin-actions">
+                      {editingUserId === u.id ? (
+                        <>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => guardarRolUsuario(u.id)}
+                            title="Guardar rol"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-light"
+                            onClick={cancelEditUserRole}
+                            title="Cancelar"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="btn btn-sm btn-outline-light"
+                          onClick={() => startEditUserRole(u)}
+                          title="Editar rol"
+                        >
+                          Editar
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => eliminarUsuario(u.id)}
+                        title="Eliminar"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* ================= PEDIDOS ================= */}
       {activeTab === "pedidos" && (
-        <table className="admin-table table table-hover">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Estado</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pedidos.length === 0 && (
-              <tr>
-                <td colSpan={4} className="text-center text-muted">
-                  No hay pedidos registrados
-                </td>
-              </tr>
-            )}
+        <div className="panel p-0">
+          <div className="admin-section-head">
+            <div className="admin-section-title">Pedidos</div>
+            <div className="admin-section-meta">Total: {pedidos.length}</div>
+          </div>
 
-            {pedidos.map((p) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.usuario?.nombreUsuario ?? "Compra pública"}</td>
-                <td>{p.estado}</td>
-                <td>
-                  {p.fechaCreacion
-                    ? new Date(p.fechaCreacion).toLocaleDateString()
-                    : "-"}
-                </td>
+          <table className="admin-table table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Estado</th>
+                <th>Fecha</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pedidos.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center text-muted">
+                    No hay pedidos registrados
+                  </td>
+                </tr>
+              )}
+
+              {pedidos.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.usuario?.nombreUsuario ?? "Compra pública"}</td>
+                  <td>{p.estado}</td>
+                  <td>
+                    {p.fechaCreacion
+                      ? new Date(p.fechaCreacion).toLocaleDateString()
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -75,7 +75,11 @@ export const api = {
   Usuarios: {
     listar: () => apiClient.get<UsuarioAPI[]>("/admin/usuarios"),
     eliminar: (id: number) =>
-      apiClient.delete(`/admin/usuarios/${id}`)
+      apiClient.delete(`/admin/usuarios/${id}`),
+
+    // Requiere backend: PUT /api/v1/admin/usuarios/{id}/rol
+    actualizarRol: (id: number, rol: string) =>
+      apiClient.put(`/admin/usuarios/${id}/rol`, { rol })
   },
 
   Pedidos: {

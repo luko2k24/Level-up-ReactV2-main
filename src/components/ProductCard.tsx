@@ -48,6 +48,12 @@ const ProductCard: FC<TarjetaProductoProps> = ({ producto, onAdd }) => {
           {categoria.nombre}
         </span>
 
+        {oferta && (
+          <span className="badge badge-oferta align-self-start mb-2">
+            ¡Oferta!
+          </span>
+        )}
+
         <h5 className="text-truncate">{nombre}</h5>
 
         <p className="fs-4 fw-bold text-success mt-auto">
