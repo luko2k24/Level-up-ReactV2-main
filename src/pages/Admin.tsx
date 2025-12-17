@@ -168,16 +168,16 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="container-fluid py-4 bg-dark min-vh-100 text-white">
-      <h2 className="fw-bold text-success mb-4">Panel de Administración</h2>
+    <div className="admin-page container-fluid py-4 min-vh-100">
+      <h2 className="neon-title">Panel de Administración</h2>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
       {/* TABS */}
-      <ul className="nav nav-pills mb-4 gap-2">
+      <ul className="admin-tabs nav nav-pills mb-4 gap-2">
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "productos" ? "active bg-success" : "bg-secondary text-white"}`}
+            className={`nav-link ${activeTab === "productos" ? "active" : ""}`}
             onClick={() => setActiveTab("productos")}
           >
             <FaBoxOpen /> Productos ({productos.length})
@@ -186,7 +186,7 @@ export default function AdminPanel() {
 
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "usuarios" ? "active bg-primary" : "bg-secondary text-white"}`}
+            className={`nav-link ${activeTab === "usuarios" ? "active" : ""}`}
             onClick={() => setActiveTab("usuarios")}
           >
             <FaUsers /> Usuarios ({usuarios.length})
@@ -195,7 +195,7 @@ export default function AdminPanel() {
 
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "pedidos" ? "active bg-warning text-dark" : "bg-secondary text-white"}`}
+            className={`nav-link ${activeTab === "pedidos" ? "active" : ""}`}
             onClick={() => setActiveTab("pedidos")}
           >
             <FaClipboardList /> Pedidos ({pedidos.length})
@@ -304,15 +304,15 @@ export default function AdminPanel() {
               </div>
 
               <div className="col-12">
-                <button className="btn btn-success fw-bold" type="submit">
+                <button className="btn btn-primary fw-bold" type="submit">
                   Crear
                 </button>
               </div>
             </form>
           </div>
 
-          <table className="table table-dark table-hover">
-            <thead className="table-success text-dark">
+          <table className="admin-table table table-hover">
+            <thead>
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
@@ -346,8 +346,8 @@ export default function AdminPanel() {
 
       {/* ================= USUARIOS ================= */}
       {activeTab === "usuarios" && (
-        <table className="table table-dark table-hover">
-          <thead className="table-primary">
+        <table className="admin-table table table-hover">
+          <thead>
             <tr>
               <th>ID</th>
               <th>Usuario</th>
@@ -380,8 +380,8 @@ export default function AdminPanel() {
 
       {/* ================= PEDIDOS ================= */}
       {activeTab === "pedidos" && (
-        <table className="table table-dark table-hover">
-          <thead className="table-warning text-dark">
+        <table className="admin-table table table-hover">
+          <thead>
             <tr>
               <th>ID</th>
               <th>Cliente</th>
