@@ -45,13 +45,16 @@ export default function Header() {
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Abrir menú"
         >
           <span className="navbar-toggler-icon" />
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
           {/* LINKS */}
-          <ul className="navbar-nav me-auto">
+          <ul className="navbar-nav me-auto mt-3 mt-lg-0">
             <li className="nav-item">
               <Link className={getLinkClasses("/")} to="/">
                 Inicio
@@ -73,11 +76,11 @@ export default function Header() {
           </ul>
 
           {/* DERECHA */}
-          <div className="d-flex align-items-center gap-3">
+          <div className="navbar-actions d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 gap-lg-3 mt-3 mt-lg-0">
             {/* CARRITO */}
             <Link
               to="/carrito"
-              className="btn btn-dark border border-secondary text-light d-flex align-items-center gap-2"
+              className="btn btn-dark border border-secondary text-light d-flex align-items-center gap-2 justify-content-center justify-content-lg-start"
             >
               <FaShoppingCart className="text-success" />
               <span>Carrito</span>
@@ -87,7 +90,7 @@ export default function Header() {
               <>
                 {isAdmin && (
                   <button
-                    className="btn btn-warning fw-bold d-flex align-items-center gap-2"
+                    className="btn btn-warning fw-bold d-flex align-items-center gap-2 justify-content-center justify-content-lg-start"
                     onClick={() => navigate("/admin")}
                   >
                     <FaUserShield />
@@ -96,7 +99,7 @@ export default function Header() {
                 )}
 
                 <button
-                  className="btn btn-success fw-bold d-flex align-items-center gap-2"
+                  className="btn btn-success fw-bold d-flex align-items-center gap-2 justify-content-center justify-content-lg-start"
                   onClick={() => navigate("/perfil")}
                 >
                   <FaUserCircle />
@@ -106,7 +109,7 @@ export default function Header() {
             ) : (
               <Link
                 to="/login"
-                className="btn btn-success fw-bold d-flex align-items-center gap-2"
+                className="btn btn-success fw-bold d-flex align-items-center gap-2 justify-content-center justify-content-lg-start"
               >
                 <FaSignInAlt />
                 <span>Login</span>

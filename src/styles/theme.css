@@ -257,6 +257,17 @@ footer { background: var(--surface); color: var(--muted); }
   align-items: center;
 }
 
+/* Navbar responsive: acciones en móvil a ancho completo */
+.navbar-actions .btn{
+  width: 100%;
+}
+
+@media (min-width: 992px){
+  .navbar-actions .btn{
+    width: auto;
+  }
+}
+
 
 /* ====== Parche mínimo de contraste de texto ====== */
 
