@@ -33,7 +33,6 @@ export const api = {
       return !!localStorage.getItem("token");
     },
 
-    // 🔥 CORRECTO PARA SPRING SECURITY
     isAnAdmin: () => {
   const token = localStorage.getItem("token");
   if (!token) return false;
@@ -48,7 +47,7 @@ export const api = {
       (Array.isArray(payload.authorities) && payload.authorities[0]) ||
       "";
 
-    // ✅ ACEPTA ADMIN EN TODAS LAS FORMAS
+  
     return (
       role === "ADMIN" ||
       role === "ROLE_ADMIN" ||
