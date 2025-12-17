@@ -126,7 +126,7 @@ export default function AdminPanel() {
 
       await cargarTodo();
     } catch (e) {
-      setError(getApiErrorMessage(e));
+      setError(`Crear producto: ${getApiErrorMessage(e)}`);
     }
   };
 
@@ -138,7 +138,7 @@ export default function AdminPanel() {
       await api.Productos.eliminar(id);
       await cargarTodo();
     } catch (e) {
-      setError(getApiErrorMessage(e));
+      setError(`Eliminar producto: ${getApiErrorMessage(e)}`);
     }
   };
 
@@ -150,7 +150,7 @@ export default function AdminPanel() {
       await api.Usuarios.eliminar(id);
       await cargarTodo();
     } catch (e) {
-      setError(getApiErrorMessage(e));
+      setError(`Eliminar usuario: ${getApiErrorMessage(e)}`);
     }
   };
 
